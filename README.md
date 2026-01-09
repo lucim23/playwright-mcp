@@ -82,6 +82,38 @@ Follow the MCP install [guide](https://modelcontextprotocol.io/quickstart/user),
 </details>
 
 <details>
+<summary>Cline</summary>
+
+Follow the instruction in the section [MCP Integration](https://docs.cline.bot/mcp/mcp-overview)
+
+Connection Types
+Local (stdio): Cline runs the server as a local process.
+Remote (streamableHttp): hosted/cloud environments.
+Legacy (sse): Only use if the host doesn't support the modern streamableHttp protocol.
+
+Example: Local Setup
+Add the following to your cline_mcp_settings.json file:
+
+```json
+{
+  "mcpServers": {
+    "playwright": {
+      "type": "stdio",
+      "command": "npx",
+      "timeout": 30,
+      "args": [
+        "-y",
+        "@playwright/mcp@latest"
+      ],
+      "disabled": false
+    }
+  }
+}
+```
+
+</details>
+
+<details>
 <summary>Codex</summary>
 
 Use the Codex CLI to add the Playwright MCP server:
