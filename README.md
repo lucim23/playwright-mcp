@@ -2,6 +2,14 @@
 
 A Model Context Protocol (MCP) server that provides browser automation capabilities using [Playwright](https://playwright.dev). This server enables LLMs to interact with web pages through structured accessibility snapshots, bypassing the need for screenshots or visually-tuned models.
 
+### Playwright MCP vs Playwright CLI
+
+**Important:** This package provides MCP interface into Playwright. You might benefit from using the [CLI+SKILLS](https://github.com/microsoft/playwright-cli) flavor instead.
+
+- **CLI**. Modern coding agents increasingly favor CLI–based workflows exposed as SKILLs over MCP because CLI invocations are more token-efficient: they avoid loading large tool schemas and verbose accessibility trees into the model context, allowing agents to act through concise, purpose-built commands. This makes CLI + SKILLs better suited for high-throughput coding agents that must balance browser automation with large codebases, tests, and reasoning within limited context windows.<br>**Learn more about [Playwright CLI with SKILLS](https://github.com/microsoft/playwright-cli)**.
+
+- **MCP**. remains relevant for specialized agentic loops that benefit from persistent state, rich introspection, and iterative reasoning over page structure, such as exploratory automation, self-healing tests, or long-running autonomous workflows where maintaining continuous browser context outweighs token cost concerns.
+
 ### Key Features
 
 - **Fast and lightweight**. Uses Playwright's accessibility tree, not pixel-based input.
