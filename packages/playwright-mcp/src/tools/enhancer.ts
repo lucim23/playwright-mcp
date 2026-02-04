@@ -52,9 +52,14 @@ export function enhanceToolResponse(
   const { toolName, params, config } = context;
 
   // Handle returnSnapshot parameter for action tools
-  // Default is false, so remove snapshot unless explicitly set to true
-  if (isActionTool(toolName) && params.returnSnapshot !== true) {
-    return removeSnapshotFromResponse(response, toolName, params);
+  if (isActionTool(toolName)) {
+    if (params.returnSnapshot !== true) {
+      // Default is false, so remove snapshot and return confirmation
+      return removeSnapshotFromResponse(response, toolName, params);
+    } else {
+      // returnSnapshot=true: apply snapshot control parameters
+      return enhanceActionToolSnapshot(response, params, config);
+    }
   }
 
   // Handle snapshot enhancements
@@ -78,6 +83,25 @@ export function enhanceToolResponse(
   }
 
   return response;
+}
+
+/**
+ * Enhance snapshot returned by action tools when returnSnapshot=true
+ * Applies snapshotMaxElements and snapshotFormat parameters
+ */
+function enhanceActionToolSnapshot(
+  response: ToolResponse,
+  params: Record<string, any>,
+  config: EnhancementContext['config']
+): ToolResponse {
+  // Map action tool snapshot params to standard snapshot params
+  const snapshotParams = {
+    maxElements: params.snapshotMaxElements ?? 300,
+    format: params.snapshotFormat ?? 'full'
+  };
+
+  // Reuse the snapshot enhancement logic
+  return enhanceSnapshotResponse(response, snapshotParams, config);
 }
 
 function isActionTool(toolName: string): boolean {

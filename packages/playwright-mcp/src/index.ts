@@ -23,6 +23,30 @@ import { enhanceToolResponse, EnhancementContext } from './tools/enhancer';
 const { createConnection: originalCreateConnection } = require('playwright/lib/mcp/index');
 
 /**
+ * Common input parameters for action tools with returnSnapshot support
+ */
+const snapshotControlParams = {
+  returnSnapshot: {
+    type: 'boolean',
+    default: false,
+    description: 'Whether to include a page snapshot in the response. Default: false'
+  },
+  snapshotMaxElements: {
+    type: 'integer',
+    default: 300,
+    minimum: 1,
+    maximum: 2000,
+    description: 'Maximum elements in snapshot when returnSnapshot=true. Default: 300'
+  },
+  snapshotFormat: {
+    type: 'string',
+    enum: ['full', 'summary'],
+    default: 'full',
+    description: 'Snapshot format when returnSnapshot=true: "full" or "summary"'
+  }
+};
+
+/**
  * Common output schema components for reuse
  */
 const outputSchemas = {
@@ -92,142 +116,82 @@ const outputSchemas = {
  */
 export const enhancedToolSchemas = {
   browser_click: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_type: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_hover: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_drag: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_select_option: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_press_key: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_navigate: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns navigation confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_navigate_back: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns navigation confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_wait_for: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns wait confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns wait confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_resize: {
-    additionalProperties: {
-      returnSnapshot: {
-        type: 'boolean',
-        default: false,
-        description: 'Whether to include a page snapshot in the response. Default: false'
-      }
-    },
+    additionalProperties: { ...snapshotControlParams },
     outputSchema: {
       type: 'object',
-      description: 'Returns resize confirmation (default) or full snapshot if returnSnapshot=true',
+      description: 'Returns resize confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
@@ -239,23 +203,12 @@ export const enhancedToolSchemas = {
         default: 'full',
         description: 'Output format: "full" returns complete tree, "summary" returns compact overview'
       },
-      selector: {
-        type: 'string',
-        description: 'CSS selector to limit snapshot scope to a specific element'
-      },
       maxElements: {
         type: 'integer',
         default: 300,
         minimum: 1,
         maximum: 2000,
         description: 'Maximum number of elements to include. Default: 300, Max: 2000'
-      },
-      maxDepth: {
-        type: 'integer',
-        default: 10,
-        minimum: 1,
-        maximum: 20,
-        description: 'Maximum tree depth. Default: 10, Max: 20'
       }
     },
     outputSchema: {

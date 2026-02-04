@@ -28,6 +28,19 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -107,6 +120,19 @@ export declare const enhancedToolSchemas: {
             returnSnapshot: {
                 type: string;
                 default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
                 description: string;
             };
         };
@@ -190,6 +216,19 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -269,6 +308,19 @@ export declare const enhancedToolSchemas: {
             returnSnapshot: {
                 type: string;
                 default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
                 description: string;
             };
         };
@@ -352,6 +404,19 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -431,6 +496,19 @@ export declare const enhancedToolSchemas: {
             returnSnapshot: {
                 type: string;
                 default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
                 description: string;
             };
         };
@@ -514,6 +592,19 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -593,6 +684,19 @@ export declare const enhancedToolSchemas: {
             returnSnapshot: {
                 type: string;
                 default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
                 description: string;
             };
         };
@@ -676,6 +780,19 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -755,6 +872,19 @@ export declare const enhancedToolSchemas: {
             returnSnapshot: {
                 type: string;
                 default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
                 description: string;
             };
         };
@@ -839,18 +969,7 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
-            selector: {
-                type: string;
-                description: string;
-            };
             maxElements: {
-                type: string;
-                default: number;
-                minimum: number;
-                maximum: number;
-                description: string;
-            };
-            maxDepth: {
                 type: string;
                 default: number;
                 minimum: number;
