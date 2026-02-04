@@ -233,6 +233,26 @@ export const enhancedToolSchemas = {
 };
 
 /**
+ * Merge enhanced parameters into a tool's input schema
+ */
+function mergeToolSchema(tool: any, enhancements: { additionalProperties: Record<string, any> }): any {
+  if (!tool.inputSchema || !enhancements.additionalProperties) {
+    return tool;
+  }
+
+  const enhancedTool = { ...tool };
+  enhancedTool.inputSchema = {
+    ...tool.inputSchema,
+    properties: {
+      ...(tool.inputSchema.properties || {}),
+      ...enhancements.additionalProperties
+    }
+  };
+
+  return enhancedTool;
+}
+
+/**
  * Create an enhanced MCP connection with additional tool parameters
  * for controlling snapshot behavior and output size.
  */
@@ -242,13 +262,31 @@ export async function createConnection(
 ): Promise<Server> {
   const server = await originalCreateConnection(config, contextGetter);
 
-  // Store original tool handlers
-  const originalHandlers = new Map<string, Function>();
-
-  // Intercept tool calls to apply enhancements
+  // Intercept request handlers to apply enhancements
   const originalSetRequestHandler = server.setRequestHandler.bind(server);
 
   server.setRequestHandler = function(schema: any, handler: Function) {
+    if (schema.method === 'tools/list') {
+      // Wrap the tools/list handler to add enhanced parameters to schemas
+      const wrappedHandler = async (request: any) => {
+        const result = await handler(request);
+
+        if (result && result.tools && Array.isArray(result.tools)) {
+          result.tools = result.tools.map((tool: any) => {
+            const enhancements = enhancedToolSchemas[tool.name as keyof typeof enhancedToolSchemas];
+            if (enhancements) {
+              return mergeToolSchema(tool, enhancements);
+            }
+            return tool;
+          });
+        }
+
+        return result;
+      };
+
+      return originalSetRequestHandler(schema, wrappedHandler);
+    }
+
     if (schema.method === 'tools/call') {
       // Wrap the tool call handler to apply enhancements
       const wrappedHandler = async (request: any) => {
