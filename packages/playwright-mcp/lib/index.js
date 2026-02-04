@@ -266,50 +266,51 @@ function mergeToolSchema(tool, enhancements) {
  */
 async function createConnection(config, contextGetter) {
     const server = await originalCreateConnection(config, contextGetter);
-    // Intercept request handlers to apply enhancements
-    const originalSetRequestHandler = server.setRequestHandler.bind(server);
-    server.setRequestHandler = function (schema, handler) {
-        if (schema.method === 'tools/list') {
-            // Wrap the tools/list handler to add enhanced parameters to schemas
-            const wrappedHandler = async (request) => {
-                const result = await handler(request);
-                if (result && result.tools && Array.isArray(result.tools)) {
-                    result.tools = result.tools.map((tool) => {
-                        const enhancements = exports.enhancedToolSchemas[tool.name];
-                        if (enhancements) {
-                            return mergeToolSchema(tool, enhancements);
-                        }
-                        return tool;
-                    });
-                }
-                return result;
-            };
-            return originalSetRequestHandler(schema, wrappedHandler);
-        }
-        if (schema.method === 'tools/call') {
-            // Wrap the tool call handler to apply enhancements
-            const wrappedHandler = async (request) => {
-                const result = await handler(request);
-                // Apply enhancements based on the tool and parameters
-                const toolName = request.params?.name;
-                const toolParams = request.params?.arguments || {};
-                if (toolName && exports.enhancedToolSchemas[toolName]) {
-                    const enhancementContext = {
-                        toolName,
-                        params: toolParams,
-                        config: {
-                            snapshotMode: config?.snapshot?.mode,
-                            imageResponses: config?.imageResponses
-                        }
-                    };
-                    return (0, enhancer_1.enhanceToolResponse)(result, enhancementContext);
-                }
-                return result;
-            };
-            return originalSetRequestHandler(schema, wrappedHandler);
-        }
-        return originalSetRequestHandler(schema, handler);
-    };
+    // Access the internal request handlers map
+    // The handlers are already registered by originalCreateConnection,
+    // so we need to wrap them after the fact
+    const handlers = server._requestHandlers;
+    // Wrap the existing tools/list handler to add enhanced parameters
+    const originalToolsListHandler = handlers.get('tools/list');
+    if (originalToolsListHandler) {
+        const wrappedToolsListHandler = async (request) => {
+            const result = await originalToolsListHandler(request);
+            if (result && result.tools && Array.isArray(result.tools)) {
+                result.tools = result.tools.map((tool) => {
+                    const enhancements = exports.enhancedToolSchemas[tool.name];
+                    if (enhancements) {
+                        return mergeToolSchema(tool, enhancements);
+                    }
+                    return tool;
+                });
+            }
+            return result;
+        };
+        handlers.set('tools/list', wrappedToolsListHandler);
+    }
+    // Wrap the existing tools/call handler to apply response enhancements
+    const originalToolsCallHandler = handlers.get('tools/call');
+    if (originalToolsCallHandler) {
+        const wrappedToolsCallHandler = async (request) => {
+            const result = await originalToolsCallHandler(request);
+            // Apply enhancements based on the tool and parameters
+            const toolName = request.params?.name;
+            const toolParams = request.params?.arguments || {};
+            if (toolName && exports.enhancedToolSchemas[toolName]) {
+                const enhancementContext = {
+                    toolName,
+                    params: toolParams,
+                    config: {
+                        snapshotMode: config?.snapshot?.mode,
+                        imageResponses: config?.imageResponses
+                    }
+                };
+                return (0, enhancer_1.enhanceToolResponse)(result, enhancementContext);
+            }
+            return result;
+        };
+        handlers.set('tools/call', wrappedToolsCallHandler);
+    }
     return server;
 }
 // Re-export utilities

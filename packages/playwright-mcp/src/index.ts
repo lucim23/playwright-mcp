@@ -262,61 +262,59 @@ export async function createConnection(
 ): Promise<Server> {
   const server = await originalCreateConnection(config, contextGetter);
 
-  // Intercept request handlers to apply enhancements
-  const originalSetRequestHandler = server.setRequestHandler.bind(server);
+  // Access the internal request handlers map
+  // The handlers are already registered by originalCreateConnection,
+  // so we need to wrap them after the fact
+  const handlers = (server as any)._requestHandlers as Map<string, Function>;
 
-  server.setRequestHandler = function(schema: any, handler: Function) {
-    if (schema.method === 'tools/list') {
-      // Wrap the tools/list handler to add enhanced parameters to schemas
-      const wrappedHandler = async (request: any) => {
-        const result = await handler(request);
+  // Wrap the existing tools/list handler to add enhanced parameters
+  const originalToolsListHandler = handlers.get('tools/list');
+  if (originalToolsListHandler) {
+    const wrappedToolsListHandler = async (request: any) => {
+      const result = await originalToolsListHandler(request);
 
-        if (result && result.tools && Array.isArray(result.tools)) {
-          result.tools = result.tools.map((tool: any) => {
-            const enhancements = enhancedToolSchemas[tool.name as keyof typeof enhancedToolSchemas];
-            if (enhancements) {
-              return mergeToolSchema(tool, enhancements);
-            }
-            return tool;
-          });
-        }
+      if (result && result.tools && Array.isArray(result.tools)) {
+        result.tools = result.tools.map((tool: any) => {
+          const enhancements = enhancedToolSchemas[tool.name as keyof typeof enhancedToolSchemas];
+          if (enhancements) {
+            return mergeToolSchema(tool, enhancements);
+          }
+          return tool;
+        });
+      }
 
-        return result;
-      };
+      return result;
+    };
+    handlers.set('tools/list', wrappedToolsListHandler);
+  }
 
-      return originalSetRequestHandler(schema, wrappedHandler);
-    }
+  // Wrap the existing tools/call handler to apply response enhancements
+  const originalToolsCallHandler = handlers.get('tools/call');
+  if (originalToolsCallHandler) {
+    const wrappedToolsCallHandler = async (request: any) => {
+      const result = await originalToolsCallHandler(request);
 
-    if (schema.method === 'tools/call') {
-      // Wrap the tool call handler to apply enhancements
-      const wrappedHandler = async (request: any) => {
-        const result = await handler(request);
+      // Apply enhancements based on the tool and parameters
+      const toolName = request.params?.name;
+      const toolParams = request.params?.arguments || {};
 
-        // Apply enhancements based on the tool and parameters
-        const toolName = request.params?.name;
-        const toolParams = request.params?.arguments || {};
+      if (toolName && enhancedToolSchemas[toolName as keyof typeof enhancedToolSchemas]) {
+        const enhancementContext: EnhancementContext = {
+          toolName,
+          params: toolParams,
+          config: {
+            snapshotMode: config?.snapshot?.mode,
+            imageResponses: config?.imageResponses
+          }
+        };
 
-        if (toolName && enhancedToolSchemas[toolName as keyof typeof enhancedToolSchemas]) {
-          const enhancementContext: EnhancementContext = {
-            toolName,
-            params: toolParams,
-            config: {
-              snapshotMode: config?.snapshot?.mode,
-              imageResponses: config?.imageResponses
-            }
-          };
+        return enhanceToolResponse(result, enhancementContext);
+      }
 
-          return enhanceToolResponse(result, enhancementContext);
-        }
-
-        return result;
-      };
-
-      return originalSetRequestHandler(schema, wrappedHandler);
-    }
-
-    return originalSetRequestHandler(schema, handler);
-  };
+      return result;
+    };
+    handlers.set('tools/call', wrappedToolsCallHandler);
+  }
 
   return server;
 }
