@@ -282,6 +282,50 @@ test.describe('Enhanced Tool Parameters', () => {
     });
   });
 
+  test.describe('Schema merging', () => {
+    const { enhancedToolSchemas } = require('../lib/index');
+
+    test('enhancedToolSchemas should define additional properties for action tools', () => {
+      expect(enhancedToolSchemas.browser_click).toBeDefined();
+      expect(enhancedToolSchemas.browser_click.additionalProperties.returnSnapshot).toBeDefined();
+      expect(enhancedToolSchemas.browser_click.additionalProperties.returnSnapshot.type).toBe('boolean');
+      expect(enhancedToolSchemas.browser_click.additionalProperties.returnSnapshot.default).toBe(false);
+    });
+
+    test('enhancedToolSchemas should define additional properties for browser_snapshot', () => {
+      expect(enhancedToolSchemas.browser_snapshot).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.format).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.maxElements).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.maxDepth).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.selector).toBeDefined();
+    });
+
+    test('enhancedToolSchemas should define additional properties for console/network tools', () => {
+      expect(enhancedToolSchemas.browser_console_messages).toBeDefined();
+      expect(enhancedToolSchemas.browser_console_messages.additionalProperties.limit).toBeDefined();
+      expect(enhancedToolSchemas.browser_console_messages.additionalProperties.countOnly).toBeDefined();
+
+      expect(enhancedToolSchemas.browser_network_requests).toBeDefined();
+      expect(enhancedToolSchemas.browser_network_requests.additionalProperties.limit).toBeDefined();
+      expect(enhancedToolSchemas.browser_network_requests.additionalProperties.countOnly).toBeDefined();
+    });
+
+    test('enhancedToolSchemas should define additional properties for evaluate/run_code', () => {
+      expect(enhancedToolSchemas.browser_evaluate).toBeDefined();
+      expect(enhancedToolSchemas.browser_evaluate.additionalProperties.maxOutputLength).toBeDefined();
+
+      expect(enhancedToolSchemas.browser_run_code).toBeDefined();
+      expect(enhancedToolSchemas.browser_run_code.additionalProperties.maxOutputLength).toBeDefined();
+      expect(enhancedToolSchemas.browser_run_code.additionalProperties.outputFile).toBeDefined();
+    });
+
+    test('enhancedToolSchemas should define additional properties for screenshot', () => {
+      expect(enhancedToolSchemas.browser_take_screenshot).toBeDefined();
+      expect(enhancedToolSchemas.browser_take_screenshot.additionalProperties.quality).toBeDefined();
+      expect(enhancedToolSchemas.browser_take_screenshot.additionalProperties.jpegQuality).toBeDefined();
+    });
+  });
+
   test.describe('Tool enhancer', () => {
     const { enhanceToolResponse } = require('../lib/tools/enhancer');
 
