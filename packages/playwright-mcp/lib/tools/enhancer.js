@@ -26,7 +26,8 @@ const confirmation_1 = require("../utils/confirmation");
 function enhanceToolResponse(response, context) {
     const { toolName, params, config } = context;
     // Handle returnSnapshot parameter for action tools
-    if (isActionTool(toolName) && params.returnSnapshot === false) {
+    // Default is false, so remove snapshot unless explicitly set to true
+    if (isActionTool(toolName) && params.returnSnapshot !== true) {
         return removeSnapshotFromResponse(response, toolName, params);
     }
     // Handle snapshot enhancements
