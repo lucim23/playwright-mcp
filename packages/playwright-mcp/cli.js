@@ -18,10 +18,6 @@
 // Import enhanced tool schemas and enhancer
 const { enhancedToolSchemas, enhanceToolResponse } = require('./lib/index');
 
-// Patch the MCP server module to add enhanced parameters
-const mcpServer = require('playwright/lib/mcp/sdk/server');
-const originalCreateServer = mcpServer.createServer;
-
 /**
  * Merge enhanced parameters into a tool's input schema
  */
@@ -42,45 +38,50 @@ function mergeToolSchema(tool, enhancements) {
   };
 }
 
-// Override createServer to intercept tool listing and tool calls
-mcpServer.createServer = function(name, version, backend, runHeartbeat) {
-  // Wrap the backend's listTools to add enhanced parameters
-  const originalListTools = backend.listTools.bind(backend);
-  backend.listTools = async function() {
-    const tools = await originalListTools();
-    return tools.map(tool => {
-      const enhancements = enhancedToolSchemas[tool.name];
-      if (enhancements) {
-        return mergeToolSchema(tool, enhancements);
-      }
-      return tool;
-    });
-  };
+// Patch the BrowserServerBackend prototype before the program loads
+const { createRequire } = require('module');
+const playwrightPath = require.resolve('playwright');
+const requireFromPlaywright = createRequire(playwrightPath);
 
-  // Wrap the backend's callTool to apply response enhancements
-  const originalCallTool = backend.callTool.bind(backend);
-  backend.callTool = async function(toolName, args, progress) {
-    const result = await originalCallTool(toolName, args, progress);
+// Get the BrowserServerBackend class and patch its prototype
+const browserServerBackendModule = requireFromPlaywright('./lib/mcp/browser/browserServerBackend.js');
+const BrowserServerBackend = browserServerBackendModule.BrowserServerBackend;
 
-    // Apply enhancements if this tool has enhanced parameters
-    if (enhancedToolSchemas[toolName]) {
-      return enhanceToolResponse(result, {
-        toolName,
-        params: args,
-        config: {}
-      });
+// Patch listTools to add enhanced parameters to tool schemas
+const originalListTools = BrowserServerBackend.prototype.listTools;
+BrowserServerBackend.prototype.listTools = async function() {
+  const tools = await originalListTools.call(this);
+  return tools.map(tool => {
+    const enhancements = enhancedToolSchemas[tool.name];
+    if (enhancements) {
+      return mergeToolSchema(tool, enhancements);
     }
-
-    return result;
-  };
-
-  return originalCreateServer(name, version, backend, runHeartbeat);
+    return tool;
+  });
 };
 
+// Patch callTool to apply response enhancements
+const originalCallTool = BrowserServerBackend.prototype.callTool;
+BrowserServerBackend.prototype.callTool = async function(toolName, args, progress) {
+  const result = await originalCallTool.call(this, toolName, args, progress);
+
+  // Apply enhancements if this tool has enhanced parameters
+  if (enhancedToolSchemas[toolName]) {
+    return enhanceToolResponse(result, {
+      toolName,
+      params: args,
+      config: {}
+    });
+  }
+
+  return result;
+};
+
+// Now load the program (which will use our patched BrowserServerBackend)
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateCommand } = require('playwright/lib/mcp/program');
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
-decorateCommand(p, packageJSON.version)
+decorateCommand(p, packageJSON.version);
 void program.parseAsync(process.argv);
