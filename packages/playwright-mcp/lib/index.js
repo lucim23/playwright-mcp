@@ -244,16 +244,48 @@ exports.enhancedToolSchemas = {
     }
 };
 /**
+ * Merge enhanced parameters into a tool's input schema
+ */
+function mergeToolSchema(tool, enhancements) {
+    if (!tool.inputSchema || !enhancements.additionalProperties) {
+        return tool;
+    }
+    const enhancedTool = { ...tool };
+    enhancedTool.inputSchema = {
+        ...tool.inputSchema,
+        properties: {
+            ...(tool.inputSchema.properties || {}),
+            ...enhancements.additionalProperties
+        }
+    };
+    return enhancedTool;
+}
+/**
  * Create an enhanced MCP connection with additional tool parameters
  * for controlling snapshot behavior and output size.
  */
 async function createConnection(config, contextGetter) {
     const server = await originalCreateConnection(config, contextGetter);
-    // Store original tool handlers
-    const originalHandlers = new Map();
-    // Intercept tool calls to apply enhancements
+    // Intercept request handlers to apply enhancements
     const originalSetRequestHandler = server.setRequestHandler.bind(server);
     server.setRequestHandler = function (schema, handler) {
+        if (schema.method === 'tools/list') {
+            // Wrap the tools/list handler to add enhanced parameters to schemas
+            const wrappedHandler = async (request) => {
+                const result = await handler(request);
+                if (result && result.tools && Array.isArray(result.tools)) {
+                    result.tools = result.tools.map((tool) => {
+                        const enhancements = exports.enhancedToolSchemas[tool.name];
+                        if (enhancements) {
+                            return mergeToolSchema(tool, enhancements);
+                        }
+                        return tool;
+                    });
+                }
+                return result;
+            };
+            return originalSetRequestHandler(schema, wrappedHandler);
+        }
         if (schema.method === 'tools/call') {
             // Wrap the tool call handler to apply enhancements
             const wrappedHandler = async (request) => {
