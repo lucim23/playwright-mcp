@@ -21,7 +21,9 @@
     "ftest": "playwright test --project=firefox",
     "wtest": "playwright test --project=webkit",
     "dtest": "MCP_IN_DOCKER=1 playwright test --project=chromium-docker",
-    "build": "echo OK",
+    "build": "tsc -p tsconfig.json",
+    "clean": "rm -rf lib",
+    "rebuild": "npm run clean && npm run build",
     "npm-publish": "npm run lint && npm run test && npm publish",
     "copy-config": "cp ../../../playwright/packages/playwright/src/mcp/config.d.ts . && perl -pi -e \"s|import type \\* as playwright from 'playwright-core';|import type * as playwright from 'playwright';|\" ./config.d.ts",
     "roll": "npm run copy-config && npm run lint"
@@ -31,11 +33,19 @@
     ".": {
       "types": "./index.d.ts",
       "default": "./index.js"
+    },
+    "./enhanced": {
+      "types": "./lib/index.d.ts",
+      "default": "./lib/index.js"
     }
   },
   "dependencies": {
     "playwright": "1.59.0-alpha-1770157258000",
-    "playwright-core": "1.59.0-alpha-1770157258000"
+    "playwright-core": "1.59.0-alpha-1770157258000",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5"
   },
   "bin": {
     "playwright-mcp": "cli.js"
