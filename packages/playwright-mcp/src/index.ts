@@ -23,6 +23,70 @@ import { enhanceToolResponse, EnhancementContext } from './tools/enhancer';
 const { createConnection: originalCreateConnection } = require('playwright/lib/mcp/index');
 
 /**
+ * Common output schema components for reuse
+ */
+const outputSchemas = {
+  // Page info included in most responses
+  pageInfo: {
+    type: 'object',
+    properties: {
+      pageUrl: { type: 'string', description: 'Current page URL' },
+      pageTitle: { type: 'string', description: 'Current page title' }
+    }
+  },
+  // Meta info for truncated responses
+  truncationMeta: {
+    type: 'object',
+    properties: {
+      truncated: { type: 'boolean', description: 'Whether output was truncated' },
+      returnedCount: { type: 'integer', description: 'Number of items returned' },
+      totalCount: { type: 'integer', description: 'Total items available' }
+    }
+  },
+  // Action confirmation (when returnSnapshot=false)
+  actionConfirmation: {
+    type: 'object',
+    description: 'Compact confirmation when returnSnapshot=false (default)',
+    properties: {
+      result: { type: 'string', description: 'Action confirmation message' },
+      pageUrl: { type: 'string', description: 'Current page URL' },
+      pageTitle: { type: 'string', description: 'Current page title' },
+      meta: {
+        type: 'object',
+        properties: {
+          snapshotDisabled: { type: 'boolean', const: true },
+          reason: { type: 'string' }
+        }
+      }
+    }
+  },
+  // Full snapshot response (when returnSnapshot=true)
+  snapshotResponse: {
+    type: 'object',
+    description: 'Full response when returnSnapshot=true',
+    properties: {
+      page: {
+        type: 'object',
+        properties: {
+          url: { type: 'string' },
+          title: { type: 'string' },
+          console: { type: 'string', description: 'Console message counts' }
+        }
+      },
+      snapshot: { type: 'string', description: 'YAML accessibility tree with element refs' },
+      meta: {
+        type: 'object',
+        properties: {
+          truncated: { type: 'boolean' },
+          returnedCount: { type: 'integer' },
+          totalCount: { type: 'integer' }
+        }
+      }
+    }
+  }
+};
+
+/**
  * Enhanced tool schemas that add new parameters to existing tools.
  * These are merged with the original schemas when creating the connection.
  */
@@ -34,6 +98,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_type: {
@@ -43,6 +112,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_hover: {
@@ -52,6 +126,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_drag: {
@@ -61,6 +140,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_select_option: {
@@ -70,6 +154,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_press_key: {
@@ -79,6 +168,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_navigate: {
@@ -88,6 +182,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns navigation confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_navigate_back: {
@@ -97,6 +196,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns navigation confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_wait_for: {
@@ -106,6 +210,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns wait confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_resize: {
@@ -115,6 +224,11 @@ export const enhancedToolSchemas = {
         default: false,
         description: 'Whether to include a page snapshot in the response. Default: false'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns resize confirmation (default) or full snapshot if returnSnapshot=true',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
   browser_snapshot: {
@@ -143,6 +257,38 @@ export const enhancedToolSchemas = {
         maximum: 20,
         description: 'Maximum tree depth. Default: 10, Max: 20'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Accessibility snapshot of the page',
+      properties: {
+        page: {
+          type: 'object',
+          properties: {
+            url: { type: 'string', description: 'Current page URL' },
+            title: { type: 'string', description: 'Current page title' },
+            console: { type: 'string', description: 'Console error/warning counts' }
+          }
+        },
+        snapshot: {
+          type: 'string',
+          description: 'YAML accessibility tree (format=full) or compact summary (format=summary). Elements have [ref=X] attributes for interaction.'
+        },
+        events: {
+          type: 'array',
+          description: 'Recent console events and warnings',
+          items: { type: 'string' }
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            format: { type: 'string', enum: ['full', 'summary'] },
+            truncated: { type: 'boolean', description: 'Whether elements were truncated' },
+            returnedCount: { type: 'integer', description: 'Elements returned' },
+            totalCount: { type: 'integer', description: 'Total elements on page' }
+          }
+        }
+      }
     }
   },
   browser_console_messages: {
@@ -162,6 +308,25 @@ export const enhancedToolSchemas = {
       since: {
         type: 'string',
         description: 'ISO timestamp - return messages after this time'
+      }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Console messages from the page',
+      properties: {
+        result: {
+          type: 'string',
+          description: 'Console messages list or counts summary (if countOnly=true)'
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            truncated: { type: 'boolean' },
+            returnedCount: { type: 'integer' },
+            totalCount: { type: 'integer' },
+            limit: { type: 'integer' }
+          }
+        }
       }
     }
   },
@@ -185,6 +350,25 @@ export const enhancedToolSchemas = {
         default: 'full',
         description: 'Output format: "full" or "compact"'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Network requests made by the page',
+      properties: {
+        result: {
+          type: 'string',
+          description: 'Network requests list or counts by status (if countOnly=true)'
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            truncated: { type: 'boolean' },
+            returnedCount: { type: 'integer' },
+            totalCount: { type: 'integer' },
+            limit: { type: 'integer' }
+          }
+        }
+      }
     }
   },
   browser_take_screenshot: {
@@ -202,6 +386,25 @@ export const enhancedToolSchemas = {
         maximum: 100,
         description: 'JPEG quality (1-100) when type is jpeg. Default: 80'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Screenshot of the page or element',
+      properties: {
+        image: {
+          type: 'string',
+          description: 'Base64-encoded image data (if no filename specified)',
+          contentEncoding: 'base64'
+        },
+        filename: {
+          type: 'string',
+          description: 'Path to saved screenshot file (if filename specified)'
+        },
+        mimeType: {
+          type: 'string',
+          enum: ['image/png', 'image/jpeg']
+        }
+      }
     }
   },
   browser_evaluate: {
@@ -212,6 +415,24 @@ export const enhancedToolSchemas = {
         minimum: 100,
         maximum: 100000,
         description: 'Max output characters. Default: 10000'
+      }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Result of JavaScript evaluation',
+      properties: {
+        result: {
+          type: 'string',
+          description: 'Serialized return value from the evaluated function'
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            truncated: { type: 'boolean' },
+            returnedCount: { type: 'integer', description: 'Characters returned' },
+            totalCount: { type: 'integer', description: 'Total characters before truncation' }
+          }
+        }
       }
     }
   },
@@ -228,26 +449,60 @@ export const enhancedToolSchemas = {
         type: 'string',
         description: 'Save output to file instead of returning'
       }
+    },
+    outputSchema: {
+      type: 'object',
+      description: 'Result of Playwright code execution',
+      properties: {
+        result: {
+          type: 'string',
+          description: 'Return value from the Playwright code, or file path if outputFile specified'
+        },
+        code: {
+          type: 'string',
+          description: 'The executed code snippet'
+        },
+        page: {
+          type: 'object',
+          properties: {
+            url: { type: 'string' },
+            title: { type: 'string' }
+          }
+        },
+        meta: {
+          type: 'object',
+          properties: {
+            truncated: { type: 'boolean' },
+            returnedCount: { type: 'integer' },
+            totalCount: { type: 'integer' }
+          }
+        }
+      }
     }
   }
 };
 
 /**
- * Merge enhanced parameters into a tool's input schema
+ * Merge enhanced parameters and output schema into a tool definition
  */
-function mergeToolSchema(tool: any, enhancements: { additionalProperties: Record<string, any> }): any {
-  if (!tool.inputSchema || !enhancements.additionalProperties) {
-    return tool;
+function mergeToolSchema(tool: any, enhancements: { additionalProperties?: Record<string, any>; outputSchema?: any }): any {
+  const enhancedTool = { ...tool };
+
+  // Merge input schema properties
+  if (tool.inputSchema && enhancements.additionalProperties) {
+    enhancedTool.inputSchema = {
+      ...tool.inputSchema,
+      properties: {
+        ...(tool.inputSchema.properties || {}),
+        ...enhancements.additionalProperties
+      }
+    };
   }
 
-  const enhancedTool = { ...tool };
-  enhancedTool.inputSchema = {
-    ...tool.inputSchema,
-    properties: {
-      ...(tool.inputSchema.properties || {}),
-      ...enhancements.additionalProperties
-    }
-  };
+  // Add output schema if provided
+  if (enhancements.outputSchema) {
+    enhancedTool.outputSchema = enhancements.outputSchema;
+  }
 
   return enhancedTool;
 }

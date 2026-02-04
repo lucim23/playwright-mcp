@@ -29,6 +29,78 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
     };
     browser_type: {
         additionalProperties: {
@@ -37,6 +109,78 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
         };
     };
     browser_hover: {
@@ -47,6 +191,78 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
     };
     browser_drag: {
         additionalProperties: {
@@ -55,6 +271,78 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
         };
     };
     browser_select_option: {
@@ -65,6 +353,78 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
     };
     browser_press_key: {
         additionalProperties: {
@@ -73,6 +433,78 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
         };
     };
     browser_navigate: {
@@ -83,6 +515,78 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
     };
     browser_navigate_back: {
         additionalProperties: {
@@ -91,6 +595,78 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
         };
     };
     browser_wait_for: {
@@ -101,6 +677,78 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
     };
     browser_resize: {
         additionalProperties: {
@@ -109,6 +757,78 @@ export declare const enhancedToolSchemas: {
                 default: boolean;
                 description: string;
             };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
         };
     };
     browser_snapshot: {
@@ -138,6 +858,61 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                page: {
+                    type: string;
+                    properties: {
+                        url: {
+                            type: string;
+                            description: string;
+                        };
+                        title: {
+                            type: string;
+                            description: string;
+                        };
+                        console: {
+                            type: string;
+                            description: string;
+                        };
+                    };
+                };
+                snapshot: {
+                    type: string;
+                    description: string;
+                };
+                events: {
+                    type: string;
+                    description: string;
+                    items: {
+                        type: string;
+                    };
+                };
+                meta: {
+                    type: string;
+                    properties: {
+                        format: {
+                            type: string;
+                            enum: string[];
+                        };
+                        truncated: {
+                            type: string;
+                            description: string;
+                        };
+                        returnedCount: {
+                            type: string;
+                            description: string;
+                        };
+                        totalCount: {
+                            type: string;
+                            description: string;
+                        };
+                    };
+                };
+            };
+        };
     };
     browser_console_messages: {
         additionalProperties: {
@@ -156,6 +931,33 @@ export declare const enhancedToolSchemas: {
             since: {
                 type: string;
                 description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                result: {
+                    type: string;
+                    description: string;
+                };
+                meta: {
+                    type: string;
+                    properties: {
+                        truncated: {
+                            type: string;
+                        };
+                        returnedCount: {
+                            type: string;
+                        };
+                        totalCount: {
+                            type: string;
+                        };
+                        limit: {
+                            type: string;
+                        };
+                    };
+                };
             };
         };
     };
@@ -180,6 +982,33 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                result: {
+                    type: string;
+                    description: string;
+                };
+                meta: {
+                    type: string;
+                    properties: {
+                        truncated: {
+                            type: string;
+                        };
+                        returnedCount: {
+                            type: string;
+                        };
+                        totalCount: {
+                            type: string;
+                        };
+                        limit: {
+                            type: string;
+                        };
+                    };
+                };
+            };
+        };
     };
     browser_take_screenshot: {
         additionalProperties: {
@@ -197,6 +1026,25 @@ export declare const enhancedToolSchemas: {
                 description: string;
             };
         };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                image: {
+                    type: string;
+                    description: string;
+                    contentEncoding: string;
+                };
+                filename: {
+                    type: string;
+                    description: string;
+                };
+                mimeType: {
+                    type: string;
+                    enum: string[];
+                };
+            };
+        };
     };
     browser_evaluate: {
         additionalProperties: {
@@ -206,6 +1054,32 @@ export declare const enhancedToolSchemas: {
                 minimum: number;
                 maximum: number;
                 description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                result: {
+                    type: string;
+                    description: string;
+                };
+                meta: {
+                    type: string;
+                    properties: {
+                        truncated: {
+                            type: string;
+                        };
+                        returnedCount: {
+                            type: string;
+                            description: string;
+                        };
+                        totalCount: {
+                            type: string;
+                            description: string;
+                        };
+                    };
+                };
             };
         };
     };
@@ -221,6 +1095,45 @@ export declare const enhancedToolSchemas: {
             outputFile: {
                 type: string;
                 description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            properties: {
+                result: {
+                    type: string;
+                    description: string;
+                };
+                code: {
+                    type: string;
+                    description: string;
+                };
+                page: {
+                    type: string;
+                    properties: {
+                        url: {
+                            type: string;
+                        };
+                        title: {
+                            type: string;
+                        };
+                    };
+                };
+                meta: {
+                    type: string;
+                    properties: {
+                        truncated: {
+                            type: string;
+                        };
+                        returnedCount: {
+                            type: string;
+                        };
+                        totalCount: {
+                            type: string;
+                        };
+                    };
+                };
             };
         };
     };
