@@ -15,5 +15,6 @@
  * limitations under the License.
  */
 
-const { createConnection } = require('playwright/lib/mcp/index');
-module.exports = { createConnection };
+// Use the enhanced implementation with additional tool parameters
+const { createConnection, enhancedToolSchemas, enhanceToolResponse } = require('./lib/index');
+module.exports = { createConnection, enhancedToolSchemas, enhanceToolResponse };
