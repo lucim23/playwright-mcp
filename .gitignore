@@ -7,3 +7,11 @@ playwright-report/
 .env
 .claude
 sessions/
+
+# Test screenshots
+test-*.png
+test-*.jpeg
+fixed-test-*.png
+fixed-test-*.jpeg
+verify-*.png
+verify-*.jpeg
