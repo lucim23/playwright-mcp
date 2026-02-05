@@ -5,4 +5,14 @@ playwright-report/
 .idea
 .DS_Store
 .env
+.claude
 sessions/
+.playwright-mcp
+
+# Test screenshots
+test-*.png
+test-*.jpeg
+fixed-test-*.png
+fixed-test-*.jpeg
+verify-*.png
+verify-*.jpeg

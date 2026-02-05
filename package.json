@@ -11,6 +11,9 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
+  "bin": {
+    "playwright-mcp": "packages/playwright-mcp/cli.js"
+  },
   "scripts": {
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
@@ -23,6 +26,11 @@
   "workspaces": [
     "packages/*"
   ],
+  "dependencies": {
+    "playwright": "1.59.0-alpha-1770157258000",
+    "playwright-core": "1.59.0-alpha-1770157258000",
+    "zod": "^3.23.8"
+  },
   "devDependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",
     "@playwright/test": "1.59.0-alpha-1770157258000",
