@@ -447,19 +447,31 @@ function enhanceCodeExecutionResponse(response, params) {
  * Enhance screenshot response with quality and jpegQuality parameters
  */
 function enhanceScreenshotResponse(response, params) {
-    console.log('[enhancer] enhanceScreenshotResponse called');
-    console.log('[enhancer] response.content:', JSON.stringify(response.content?.map(c => ({ type: c.type, mimeType: c.mimeType, hasData: !!c.data })), null, 2));
-    console.log('[enhancer] params:', params);
+    // Add debug info to response
+    const debugInfo = [];
+    debugInfo.push('[DEBUG] Screenshot enhancer called');
+    debugInfo.push(`[DEBUG] Params: quality=${params.quality}, jpegQuality=${params.jpegQuality}, type=${params.type}`);
     if (!response.content || response.content.length === 0) {
-        console.log('[enhancer] No content in response');
+        debugInfo.push('[DEBUG] No content in response');
+        const textContent = response.content?.find(c => c.type === 'text');
+        if (textContent && textContent.text) {
+            textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
+        }
         return response;
     }
+    debugInfo.push(`[DEBUG] Response has ${response.content.length} content items`);
+    debugInfo.push('[DEBUG] Content types: ' + response.content.map(c => `${c.type}${c.mimeType ? `(${c.mimeType})` : ''}`).join(', '));
     // Find the image content in the response
     const imageContent = response.content.find(c => c.type === 'resource' && c.mimeType?.startsWith('image/'));
     if (!imageContent || !imageContent.data) {
-        console.log('[enhancer] No image content found in response');
+        debugInfo.push('[DEBUG] No image content found - looking for type=resource with image mimeType');
+        const textContent = response.content.find(c => c.type === 'text');
+        if (textContent && textContent.text) {
+            textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
+        }
         return response;
     }
+    debugInfo.push('[DEBUG] Found image content, proceeding with processing');
     const quality = params.quality ?? 'medium';
     const jpegQuality = params.jpegQuality ?? 80;
     const imageType = params.type ?? 'png';
@@ -507,6 +519,7 @@ function enhanceScreenshotResponse(response, params) {
         }
         // Update the response if we modified the image
         if (wasModified) {
+            debugInfo.push('[DEBUG] Image was modified successfully');
             const newContent = response.content.map(c => {
                 if (c === imageContent) {
                     return {
@@ -519,7 +532,8 @@ function enhanceScreenshotResponse(response, params) {
             // Update text content with meta info
             const textContent = response.content.find(c => c.type === 'text');
             if (textContent && textContent.text) {
-                const newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
+                let newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
+                newText += '\n\n### Debug\n' + debugInfo.join('\n');
                 return {
                     ...response,
                     content: newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c)
@@ -530,10 +544,18 @@ function enhanceScreenshotResponse(response, params) {
                 content: newContent
             };
         }
+        else {
+            debugInfo.push('[DEBUG] Image was not modified (no resize needed or quality same as default)');
+        }
     }
     catch (error) {
         // If processing fails, return original response
-        console.error('Failed to process screenshot:', error);
+        debugInfo.push('[DEBUG] Error processing screenshot: ' + error.message);
+    }
+    // Add debug info even if not modified
+    const textContent = response.content.find(c => c.type === 'text');
+    if (textContent && textContent.text) {
+        textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
     }
     return response;
 }
