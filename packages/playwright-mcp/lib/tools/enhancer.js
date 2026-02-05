@@ -444,45 +444,31 @@ function enhanceCodeExecutionResponse(response, params) {
     return response;
 }
 /**
- * Enhance screenshot response with quality and jpegQuality parameters
+ * Enhance screenshot response with quality and jpegQuality parameters.
+ *
+ * Resizes the screenshot image based on the quality parameter:
+ *   - thumbnail: ~400px width
+ *   - medium: ~800px width (default)
+ *   - full: original size
+ *
+ * For JPEG images, applies the jpegQuality compression level (1-100, default 80).
+ * Updates both the response content (base64) and the file on disk.
  */
 function enhanceScreenshotResponse(response, params) {
-    // Add debug info to response
-    const debugInfo = [];
-    debugInfo.push('[DEBUG] Screenshot enhancer called');
-    debugInfo.push(`[DEBUG] Params: quality=${params.quality}, jpegQuality=${params.jpegQuality}, type=${params.type}`);
-    if (!response.content || response.content.length === 0) {
-        debugInfo.push('[DEBUG] No content in response');
-        const textContent = response.content?.find(c => c.type === 'text');
-        if (textContent && textContent.text) {
-            textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
-        }
+    if (!response.content || response.content.length === 0)
         return response;
-    }
-    debugInfo.push(`[DEBUG] Response has ${response.content.length} content items`);
-    debugInfo.push('[DEBUG] Content types: ' + response.content.map(c => `${c.type}${c.mimeType ? `(${c.mimeType})` : ''}`).join(', '));
-    // Find the image content in the response (type is 'image', not 'resource')
+    // Playwright returns screenshot images with type 'image'
     const imageContent = response.content.find(c => c.type === 'image' && c.mimeType?.startsWith('image/'));
-    if (!imageContent || !imageContent.data) {
-        debugInfo.push('[DEBUG] No image content found - looking for type=image with image mimeType');
-        const textContent = response.content.find(c => c.type === 'text');
-        if (textContent && textContent.text) {
-            textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
-        }
+    if (!imageContent || !imageContent.data)
         return response;
-    }
-    debugInfo.push('[DEBUG] Found image content, proceeding with processing');
     const quality = params.quality ?? 'medium';
     const jpegQuality = params.jpegQuality ?? 80;
     const imageType = params.type ?? 'png';
     try {
-        // Load image processing libraries from playwright-core
         const { PNG } = require('playwright-core/lib/utilsBundle');
         const jpegjs = require('playwright-core/lib/utilsBundle').jpegjs;
         const { scaleImageToSize } = require('playwright-core/lib/utils');
-        // Decode the base64 image data
         const imageBuffer = Buffer.from(imageContent.data, 'base64');
-        // Decode the image
         const image = imageType === 'png'
             ? PNG.sync.read(imageBuffer)
             : jpegjs.decode(imageBuffer, { maxMemoryUsageInMB: 512 });
@@ -497,13 +483,9 @@ function enhanceScreenshotResponse(response, params) {
                 const newWidth = Math.round(image.width * scale);
                 const newHeight = Math.round(image.height * scale);
                 const scaledImage = scaleImageToSize(image, { width: newWidth, height: newHeight });
-                // Re-encode the scaled image
-                if (imageType === 'png') {
-                    processedBuffer = PNG.sync.write(scaledImage);
-                }
-                else {
-                    processedBuffer = jpegjs.encode(scaledImage, jpegQuality).data;
-                }
+                processedBuffer = imageType === 'png'
+                    ? PNG.sync.write(scaledImage)
+                    : jpegjs.encode(scaledImage, jpegQuality).data;
                 wasModified = true;
                 meta.dimensions = `${newWidth}x${newHeight}`;
                 meta.quality = quality;
@@ -511,68 +493,46 @@ function enhanceScreenshotResponse(response, params) {
             }
         }
         else if (imageType === 'jpeg' && jpegQuality !== 80) {
-            // For JPEG, recompress with specified quality even if not resizing
+            // For full-size JPEG, recompress with specified quality
             const scaledImage = scaleImageToSize(image, { width: image.width, height: image.height });
             processedBuffer = jpegjs.encode(scaledImage, jpegQuality).data;
             wasModified = true;
             meta.quality = `jpeg quality: ${jpegQuality}`;
         }
-        // Update the response if we modified the image
-        if (wasModified) {
-            debugInfo.push('[DEBUG] Image was modified successfully');
-            // Also overwrite the file on disk with the processed image
-            const responseText = response.content.find(c => c.type === 'text');
-            if (responseText && responseText.text) {
-                const fileMatch = responseText.text.match(/save it as (.+)\n/);
-                if (fileMatch) {
-                    const filePath = fileMatch[1];
-                    try {
-                        const fs = require('fs');
-                        fs.writeFileSync(filePath, processedBuffer);
-                        debugInfo.push(`[DEBUG] Overwrote file on disk: ${filePath} (${processedBuffer.length} bytes)`);
-                    }
-                    catch (e) {
-                        debugInfo.push(`[DEBUG] Failed to overwrite file: ${e.message}`);
-                    }
+        if (!wasModified)
+            return response;
+        // Overwrite the file on disk with the processed image
+        const responseText = response.content.find(c => c.type === 'text');
+        if (responseText && responseText.text) {
+            const fileMatch = responseText.text.match(/save it as (.+)\n/);
+            if (fileMatch) {
+                try {
+                    require('fs').writeFileSync(fileMatch[1], processedBuffer);
+                }
+                catch (_e) {
+                    // Best-effort disk write; response image is still updated
                 }
             }
-            const newContent = response.content.map(c => {
-                if (c === imageContent) {
-                    return {
-                        ...c,
-                        data: processedBuffer.toString('base64')
-                    };
-                }
-                return c;
-            });
-            // Update text content with meta info
-            const textContent = response.content.find(c => c.type === 'text');
-            if (textContent && textContent.text) {
-                let newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
-                newText += '\n\n### Debug\n' + debugInfo.join('\n');
-                return {
-                    ...response,
-                    content: newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c)
-                };
-            }
+        }
+        // Update the response image content with processed data
+        const newContent = response.content.map(c => {
+            if (c === imageContent)
+                return { ...c, data: processedBuffer.toString('base64') };
+            return c;
+        });
+        // Append meta info to the text response
+        const textContent = response.content.find(c => c.type === 'text');
+        if (textContent && textContent.text) {
+            const newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
             return {
                 ...response,
-                content: newContent
+                content: newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c)
             };
         }
-        else {
-            debugInfo.push('[DEBUG] Image was not modified (no resize needed or quality same as default)');
-        }
+        return { ...response, content: newContent };
     }
-    catch (error) {
-        // If processing fails, return original response
-        debugInfo.push('[DEBUG] Error processing screenshot: ' + error.message);
+    catch (_error) {
+        return response;
     }
-    // Add debug info even if not modified
-    const textContent = response.content.find(c => c.type === 'text');
-    if (textContent && textContent.text) {
-        textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
-    }
-    return response;
 }
 //# sourceMappingURL=enhancer.js.map
