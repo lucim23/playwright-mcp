@@ -447,12 +447,17 @@ function enhanceCodeExecutionResponse(response, params) {
  * Enhance screenshot response with quality and jpegQuality parameters
  */
 function enhanceScreenshotResponse(response, params) {
+    console.log('[enhancer] enhanceScreenshotResponse called');
+    console.log('[enhancer] response.content:', JSON.stringify(response.content?.map(c => ({ type: c.type, mimeType: c.mimeType, hasData: !!c.data })), null, 2));
+    console.log('[enhancer] params:', params);
     if (!response.content || response.content.length === 0) {
+        console.log('[enhancer] No content in response');
         return response;
     }
     // Find the image content in the response
     const imageContent = response.content.find(c => c.type === 'resource' && c.mimeType?.startsWith('image/'));
     if (!imageContent || !imageContent.data) {
+        console.log('[enhancer] No image content found in response');
         return response;
     }
     const quality = params.quality ?? 'medium';
