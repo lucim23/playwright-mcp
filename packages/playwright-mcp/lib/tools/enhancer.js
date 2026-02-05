@@ -461,10 +461,10 @@ function enhanceScreenshotResponse(response, params) {
     }
     debugInfo.push(`[DEBUG] Response has ${response.content.length} content items`);
     debugInfo.push('[DEBUG] Content types: ' + response.content.map(c => `${c.type}${c.mimeType ? `(${c.mimeType})` : ''}`).join(', '));
-    // Find the image content in the response
-    const imageContent = response.content.find(c => c.type === 'resource' && c.mimeType?.startsWith('image/'));
+    // Find the image content in the response (type is 'image', not 'resource')
+    const imageContent = response.content.find(c => c.type === 'image' && c.mimeType?.startsWith('image/'));
     if (!imageContent || !imageContent.data) {
-        debugInfo.push('[DEBUG] No image content found - looking for type=resource with image mimeType');
+        debugInfo.push('[DEBUG] No image content found - looking for type=image with image mimeType');
         const textContent = response.content.find(c => c.type === 'text');
         if (textContent && textContent.text) {
             textContent.text += '\n\n### Debug\n' + debugInfo.join('\n');
