@@ -11,6 +11,9 @@
     "name": "Microsoft Corporation"
   },
   "license": "Apache-2.0",
+  "bin": {
+    "playwright-mcp": "packages/playwright-mcp/cli.js"
+  },
   "scripts": {
     "docker-build": "docker build --no-cache -t playwright-mcp-dev:latest .",
     "docker-rm": "docker rm playwright-mcp-dev",
