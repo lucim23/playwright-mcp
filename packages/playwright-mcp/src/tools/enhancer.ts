@@ -654,6 +654,23 @@ function enhanceScreenshotResponse(
     // Update the response if we modified the image
     if (wasModified) {
       debugInfo.push('[DEBUG] Image was modified successfully');
+
+      // Also overwrite the file on disk with the processed image
+      const responseText = response.content.find(c => c.type === 'text');
+      if (responseText && responseText.text) {
+        const fileMatch = responseText.text.match(/save it as (.+)\n/);
+        if (fileMatch) {
+          const filePath = fileMatch[1];
+          try {
+            const fs = require('fs');
+            fs.writeFileSync(filePath, processedBuffer);
+            debugInfo.push(`[DEBUG] Overwrote file on disk: ${filePath} (${processedBuffer.length} bytes)`);
+          } catch (e) {
+            debugInfo.push(`[DEBUG] Failed to overwrite file: ${(e as Error).message}`);
+          }
+        }
+      }
+
       const newContent = response.content.map(c => {
         if (c === imageContent) {
           return {
