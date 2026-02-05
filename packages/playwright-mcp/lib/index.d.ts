@@ -41,6 +41,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -133,6 +147,20 @@ export declare const enhancedToolSchemas: {
                 type: string;
                 enum: string[];
                 default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
         };
@@ -229,6 +257,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -321,6 +363,20 @@ export declare const enhancedToolSchemas: {
                 type: string;
                 enum: string[];
                 default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
         };
@@ -417,6 +473,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -509,6 +579,20 @@ export declare const enhancedToolSchemas: {
                 type: string;
                 enum: string[];
                 default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
         };
@@ -605,6 +689,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -697,6 +795,20 @@ export declare const enhancedToolSchemas: {
                 type: string;
                 enum: string[];
                 default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
         };
@@ -793,6 +905,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -887,6 +1013,20 @@ export declare const enhancedToolSchemas: {
                 default: string;
                 description: string;
             };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
         };
         outputSchema: {
             type: string;
@@ -974,6 +1114,20 @@ export declare const enhancedToolSchemas: {
                 default: number;
                 minimum: number;
                 maximum: number;
+                description: string;
+            };
+            includeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            excludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
                 description: string;
             };
         };

@@ -115,13 +115,13 @@ export declare const enhancedSelectOptionSchema: z.ZodObject<{
     values: z.ZodArray<z.ZodString, "many">;
     returnSnapshot: z.ZodDefault<z.ZodOptional<z.ZodBoolean>>;
 }, "strip", z.ZodTypeAny, {
+    values: string[];
     returnSnapshot: boolean;
     ref: string;
-    values: string[];
     element?: string | undefined;
 }, {
-    ref: string;
     values: string[];
+    ref: string;
     returnSnapshot?: boolean | undefined;
     element?: string | undefined;
 }>;
@@ -197,15 +197,21 @@ export declare const enhancedSnapshotSchema: z.ZodObject<{
     selector: z.ZodOptional<z.ZodString>;
     maxElements: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
     maxDepth: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
+    includeRoles: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
+    excludeRoles: z.ZodOptional<z.ZodArray<z.ZodString, "many">>;
 }, "strip", z.ZodTypeAny, {
     maxElements: number;
     format: "full" | "summary";
     maxDepth: number;
+    includeRoles?: string[] | undefined;
+    excludeRoles?: string[] | undefined;
     filename?: string | undefined;
     selector?: string | undefined;
 }, {
     maxElements?: number | undefined;
     format?: "full" | "summary" | undefined;
+    includeRoles?: string[] | undefined;
+    excludeRoles?: string[] | undefined;
     filename?: string | undefined;
     selector?: string | undefined;
     maxDepth?: number | undefined;

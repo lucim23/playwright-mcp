@@ -282,6 +282,131 @@ test.describe('Enhanced Tool Parameters', () => {
     });
   });
 
+  test.describe('Snapshot filtering', () => {
+    const {
+      filterSnapshotText,
+    } = require('../lib/utils/filter');
+
+    const sampleSnapshot = [
+      '- navigation "Main" [ref=e1]',
+      '  - list [ref=e2]',
+      '    - listitem [ref=e3]',
+      '      - link "Home" [ref=e4]',
+      '    - listitem [ref=e5]',
+      '      - link "About" [ref=e6]',
+      '  - button "Menu" [ref=e7]',
+      '- main "Content" [ref=e8]',
+      '  - heading "Welcome" [ref=e9]',
+      '  - generic "container" [ref=e10]',
+      '    - paragraph "Some text" [ref=e11]',
+      '    - button "Submit" [ref=e12]',
+      '  - textbox "Email" [ref=e13]',
+    ].join('\n');
+
+    test('includeRoles should keep only matching elements with ancestors', () => {
+      const result = filterSnapshotText(sampleSnapshot, { includeRoles: ['button', 'link'] });
+
+      expect(result.meta.filtered).toBe(true);
+      expect(result.meta.filterType).toBe('include');
+      expect(result.text).toContain('- link "Home"');
+      expect(result.text).toContain('- link "About"');
+      expect(result.text).toContain('- button "Menu"');
+      expect(result.text).toContain('- button "Submit"');
+      // Ancestors should be preserved
+      expect(result.text).toContain('- navigation "Main"');
+      expect(result.text).toContain('- main "Content"');
+      // Non-matching leaves should be removed
+      expect(result.text).not.toContain('heading');
+      expect(result.text).not.toContain('textbox');
+      expect(result.meta.filteredOut).toBeGreaterThan(0);
+    });
+
+    test('includeRoles should preserve ancestor hierarchy chain', () => {
+      const result = filterSnapshotText(sampleSnapshot, { includeRoles: ['link'] });
+
+      // Ancestors of link elements should be preserved
+      expect(result.text).toContain('- navigation');
+      expect(result.text).toContain('- list');
+      expect(result.text).toContain('- listitem');
+      expect(result.text).toContain('- link "Home"');
+      expect(result.text).toContain('- link "About"');
+      // button and other non-ancestor elements should be removed
+      expect(result.text).not.toContain('button');
+      expect(result.text).not.toContain('main');
+    });
+
+    test('excludeRoles should remove matching elements and promote children', () => {
+      const result = filterSnapshotText(sampleSnapshot, { excludeRoles: ['generic'] });
+
+      expect(result.meta.filtered).toBe(true);
+      expect(result.meta.filterType).toBe('exclude');
+      expect(result.text).not.toContain('generic');
+      // Children of generic should be promoted (paragraph and button)
+      expect(result.text).toContain('- paragraph');
+      expect(result.text).toContain('- button "Submit"');
+      expect(result.meta.filteredOut).toBe(1);
+    });
+
+    test('excludeRoles should adjust indentation of promoted children', () => {
+      const result = filterSnapshotText(sampleSnapshot, { excludeRoles: ['generic'] });
+      const lines = result.text.split('\n');
+
+      // Find the paragraph line - it was at indent=4 under generic at indent=2
+      // After generic is excluded, paragraph should be at indent=2 (promoted)
+      const paragraphLine = lines.find(l => l.includes('paragraph'));
+      expect(paragraphLine).toBeDefined();
+      const indent = paragraphLine!.length - paragraphLine!.trimStart().length;
+      expect(indent).toBe(2); // Was 4, reduced by 2 (one excluded ancestor)
+    });
+
+    test('includeRoles takes priority over excludeRoles', () => {
+      const result = filterSnapshotText(sampleSnapshot, {
+        includeRoles: ['button'],
+        excludeRoles: ['generic']
+      });
+
+      expect(result.meta.filterType).toBe('include');
+      expect(result.text).toContain('button');
+      // generic should be kept as ancestor of button "Submit"
+      expect(result.text).toContain('generic');
+    });
+
+    test('empty filter arrays should not filter', () => {
+      const result = filterSnapshotText(sampleSnapshot, { includeRoles: [], excludeRoles: [] });
+
+      expect(result.meta.filtered).toBe(false);
+      expect(result.text).toBe(sampleSnapshot);
+    });
+
+    test('filter roles should be case-insensitive', () => {
+      const result = filterSnapshotText(sampleSnapshot, { includeRoles: ['BUTTON', 'Link'] });
+
+      expect(result.text).toContain('button');
+      expect(result.text).toContain('link');
+    });
+
+    test('excludeRoles with nested excluded elements', () => {
+      const nested = [
+        '- main [ref=e1]',
+        '  - generic "outer" [ref=e2]',
+        '    - generic "inner" [ref=e3]',
+        '      - button "Deep" [ref=e4]',
+        '  - button "Shallow" [ref=e5]',
+      ].join('\n');
+
+      const result = filterSnapshotText(nested, { excludeRoles: ['generic'] });
+
+      expect(result.text).not.toContain('generic');
+      expect(result.text).toContain('- button "Deep"');
+      expect(result.text).toContain('- button "Shallow"');
+
+      // Deep button was at indent=6, two generic ancestors removed → indent=2
+      const deepLine = result.text.split('\n').find(l => l.includes('Deep'));
+      const deepIndent = deepLine!.length - deepLine!.trimStart().length;
+      expect(deepIndent).toBe(2);
+    });
+  });
+
   test.describe('Schema merging', () => {
     const { enhancedToolSchemas } = require('../lib/index');
 
@@ -296,8 +421,17 @@ test.describe('Enhanced Tool Parameters', () => {
       expect(enhancedToolSchemas.browser_snapshot).toBeDefined();
       expect(enhancedToolSchemas.browser_snapshot.additionalProperties.format).toBeDefined();
       expect(enhancedToolSchemas.browser_snapshot.additionalProperties.maxElements).toBeDefined();
-      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.maxDepth).toBeDefined();
-      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.selector).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.includeRoles).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.includeRoles.type).toBe('array');
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.excludeRoles).toBeDefined();
+      expect(enhancedToolSchemas.browser_snapshot.additionalProperties.excludeRoles.type).toBe('array');
+    });
+
+    test('enhancedToolSchemas should define filter properties for action tools', () => {
+      expect(enhancedToolSchemas.browser_click.additionalProperties.snapshotIncludeRoles).toBeDefined();
+      expect(enhancedToolSchemas.browser_click.additionalProperties.snapshotIncludeRoles.type).toBe('array');
+      expect(enhancedToolSchemas.browser_click.additionalProperties.snapshotExcludeRoles).toBeDefined();
+      expect(enhancedToolSchemas.browser_click.additionalProperties.snapshotExcludeRoles.type).toBe('array');
     });
 
     test('enhancedToolSchemas should define additional properties for console/network tools', () => {
@@ -434,6 +568,105 @@ Total messages: 50 (Errors: 5, Warnings: 10)
       expect(text).toContain('Total: 50');
       expect(text).toContain('Errors: 5');
       expect(text).toContain('Warnings: 10');
+    });
+
+    test('should filter snapshot with includeRoles', () => {
+      const response = {
+        content: [{
+          type: 'text',
+          text: `### Page
+- Page URL: https://example.com
+
+### Snapshot
+\`\`\`yaml
+- navigation "Nav" [ref=e1]
+  - link "Home" [ref=e2]
+  - link "About" [ref=e3]
+- main "Content" [ref=e4]
+  - heading "Title" [ref=e5]
+  - button "Submit" [ref=e6]
+  - textbox "Email" [ref=e7]
+  - generic "wrapper" [ref=e8]
+    - paragraph "text" [ref=e9]
+\`\`\``
+        }]
+      };
+
+      const enhanced = enhanceToolResponse(response, {
+        toolName: 'browser_snapshot',
+        params: { includeRoles: ['button', 'link'] },
+        config: {}
+      });
+
+      const text = enhanced.content[0].text;
+      expect(text).toContain('link "Home"');
+      expect(text).toContain('link "About"');
+      expect(text).toContain('button "Submit"');
+      expect(text).not.toContain('heading');
+      expect(text).not.toContain('textbox');
+      expect(text).not.toContain('paragraph');
+      expect(text).toContain('Filtered: yes');
+    });
+
+    test('should filter snapshot with excludeRoles', () => {
+      const response = {
+        content: [{
+          type: 'text',
+          text: `### Page
+- Page URL: https://example.com
+
+### Snapshot
+\`\`\`yaml
+- main "Content" [ref=e1]
+  - generic "wrapper" [ref=e2]
+    - button "Submit" [ref=e3]
+  - textbox "Email" [ref=e4]
+\`\`\``
+        }]
+      };
+
+      const enhanced = enhanceToolResponse(response, {
+        toolName: 'browser_snapshot',
+        params: { excludeRoles: ['generic'] },
+        config: {}
+      });
+
+      const text = enhanced.content[0].text;
+      // Check the snapshot section doesn't contain generic (meta will mention it)
+      const snapshotMatch = text.match(/```yaml\n([\s\S]*?)```/);
+      expect(snapshotMatch).toBeTruthy();
+      expect(snapshotMatch![1]).not.toContain('generic');
+      expect(text).toContain('button "Submit"');
+      expect(text).toContain('Filtered: yes');
+    });
+
+    test('should filter action tool snapshot with snapshotIncludeRoles', () => {
+      const response = {
+        content: [{
+          type: 'text',
+          text: `### Page
+- Page URL: https://example.com
+
+### Snapshot
+\`\`\`yaml
+- main [ref=e1]
+  - button "OK" [ref=e2]
+  - heading "Title" [ref=e3]
+  - link "More" [ref=e4]
+\`\`\``
+        }]
+      };
+
+      const enhanced = enhanceToolResponse(response, {
+        toolName: 'browser_click',
+        params: { returnSnapshot: true, snapshotIncludeRoles: ['button'] },
+        config: {}
+      });
+
+      const text = enhanced.content[0].text;
+      expect(text).toContain('button "OK"');
+      expect(text).not.toContain('heading');
+      expect(text).not.toContain('link');
     });
 
     test('should truncate code execution output', () => {

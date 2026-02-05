@@ -55,6 +55,16 @@ const snapshotControlParams = {
         enum: ['full', 'summary'],
         default: 'full',
         description: 'Snapshot format when returnSnapshot=true: "full" or "summary"'
+    },
+    snapshotIncludeRoles: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Only include elements with these roles in snapshot (e.g. ["button", "link"]). Ancestors preserved for context. Takes priority over snapshotExcludeRoles.'
+    },
+    snapshotExcludeRoles: {
+        type: 'array',
+        items: { type: 'string' },
+        description: 'Exclude elements with these roles from snapshot (e.g. ["generic", "group"]). Children promoted to parent level.'
     }
 };
 /**
@@ -219,6 +229,16 @@ exports.enhancedToolSchemas = {
                 minimum: 1,
                 maximum: 2000,
                 description: 'Maximum number of elements to include. Default: 300, Max: 2000'
+            },
+            includeRoles: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Only include elements with these roles (e.g. ["button", "link", "textbox"]). Ancestors preserved for context. Takes priority over excludeRoles.'
+            },
+            excludeRoles: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Exclude elements with these roles (e.g. ["generic", "group"]). Children promoted to parent level.'
             }
         },
         outputSchema: {

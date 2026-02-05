@@ -27,6 +27,10 @@ export interface ResponseMeta {
     sizeBytes?: number;
     maxDepthReached?: boolean;
     format?: string;
+    filtered?: boolean;
+    filteredOut?: number;
+    filterType?: string;
+    filterRoles?: string[];
 }
 /**
  * Build a response meta object for including in tool responses
@@ -40,6 +44,10 @@ export declare function buildResponseMeta(options: {
     dimensions?: string;
     sizeBytes?: number;
     format?: string;
+    filtered?: boolean;
+    filteredOut?: number;
+    filterType?: string;
+    filterRoles?: string[];
 }): ResponseMeta;
 /**
  * Format meta information as a markdown section

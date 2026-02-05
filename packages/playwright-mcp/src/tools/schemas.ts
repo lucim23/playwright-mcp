@@ -114,6 +114,8 @@ export const enhancedSnapshotSchema = z.object({
   selector: z.string().optional().describe('CSS selector to limit snapshot scope to a specific element and its descendants'),
   maxElements: z.number().int().min(1).max(2000).optional().default(300).describe('Maximum number of elements to include in the snapshot. Default: 300, Max: 2000'),
   maxDepth: z.number().int().min(1).max(20).optional().default(10).describe('Maximum depth of the accessibility tree to traverse. Default: 10, Max: 20'),
+  includeRoles: z.array(z.string()).optional().describe('Only include elements with these roles (e.g. ["button", "link", "textbox"]). Ancestor elements are preserved for context. Takes priority over excludeRoles.'),
+  excludeRoles: z.array(z.string()).optional().describe('Exclude elements with these roles (e.g. ["generic", "group"]). Children of excluded elements are promoted to their parent level. Ignored if includeRoles is provided.'),
 });
 
 // Enhanced console messages schema

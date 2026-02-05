@@ -19,6 +19,7 @@ exports.enhanceToolResponse = enhanceToolResponse;
 const truncate_1 = require("../utils/truncate");
 const meta_1 = require("../utils/meta");
 const summary_1 = require("../utils/summary");
+const filter_1 = require("../utils/filter");
 const confirmation_1 = require("../utils/confirmation");
 /**
  * Apply enhancements to a tool response based on the tool name and parameters
@@ -64,6 +65,10 @@ function enhanceActionToolSnapshot(response, params, config) {
         maxElements: params.snapshotMaxElements ?? 300,
         format: params.snapshotFormat ?? 'full'
     };
+    if (params.snapshotIncludeRoles)
+        snapshotParams.includeRoles = params.snapshotIncludeRoles;
+    if (params.snapshotExcludeRoles)
+        snapshotParams.excludeRoles = params.snapshotExcludeRoles;
     // Reuse the snapshot enhancement logic
     return enhanceSnapshotResponse(response, snapshotParams, config);
 }
@@ -220,11 +225,30 @@ function enhanceSnapshotResponse(response, params, config) {
     if (!snapshotMatch) {
         return response;
     }
-    const snapshotText = snapshotMatch[1];
+    let snapshotText = snapshotMatch[1];
     const maxElements = params.maxElements ?? 300;
     const format = params.format ?? 'full';
     let processedSnapshot;
     let meta = {};
+    // Apply role filtering before truncation/summary
+    const filterOptions = {};
+    if (params.includeRoles)
+        filterOptions.includeRoles = params.includeRoles;
+    if (params.excludeRoles)
+        filterOptions.excludeRoles = params.excludeRoles;
+    let filterMeta = {};
+    if (filterOptions.includeRoles || filterOptions.excludeRoles) {
+        const filtered = (0, filter_1.filterSnapshotText)(snapshotText, filterOptions);
+        snapshotText = filtered.text;
+        if (filtered.meta.filtered) {
+            filterMeta = {
+                filtered: true,
+                filteredOut: filtered.meta.filteredOut,
+                filterType: filtered.meta.filterType,
+                filterRoles: filtered.meta.roles
+            };
+        }
+    }
     if (format === 'summary') {
         // Generate summary format
         const pageMatch = text.match(/Page URL: (.+)/);
@@ -242,6 +266,8 @@ function enhanceSnapshotResponse(response, params, config) {
         processedSnapshot = truncated.text;
         meta = (0, meta_1.buildResponseMeta)({ truncation: truncated.meta });
     }
+    // Merge filter meta
+    Object.assign(meta, filterMeta);
     // Replace the snapshot in the response
     let newText = text.replace(/### Snapshot\n```yaml\n[\s\S]*?```/, `### Snapshot\n\`\`\`yaml\n${processedSnapshot}\`\`\``);
     // Add meta section

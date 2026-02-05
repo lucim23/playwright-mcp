@@ -18,3 +18,4 @@ export * from './truncate';
 export * from './meta';
 export * from './confirmation';
 export * from './summary';
+export * from './filter';

@@ -17,6 +17,7 @@
 import { truncateArray, truncateString, truncateSnapshotText, TruncationMeta } from '../utils/truncate';
 import { buildResponseMeta, appendMetaToResponse, ResponseMeta } from '../utils/meta';
 import { summarizeSnapshot, formatSnapshotSummary } from '../utils/summary';
+import { filterSnapshotText, FilterOptions } from '../utils/filter';
 import {
   buildClickConfirmation,
   buildTypeConfirmation,
@@ -95,10 +96,15 @@ function enhanceActionToolSnapshot(
   config: EnhancementContext['config']
 ): ToolResponse {
   // Map action tool snapshot params to standard snapshot params
-  const snapshotParams = {
+  const snapshotParams: Record<string, any> = {
     maxElements: params.snapshotMaxElements ?? 300,
     format: params.snapshotFormat ?? 'full'
   };
+
+  if (params.snapshotIncludeRoles)
+    snapshotParams.includeRoles = params.snapshotIncludeRoles;
+  if (params.snapshotExcludeRoles)
+    snapshotParams.excludeRoles = params.snapshotExcludeRoles;
 
   // Reuse the snapshot enhancement logic
   return enhanceSnapshotResponse(response, snapshotParams, config);
@@ -279,12 +285,33 @@ function enhanceSnapshotResponse(
     return response;
   }
 
-  const snapshotText = snapshotMatch[1];
+  let snapshotText = snapshotMatch[1];
   const maxElements = params.maxElements ?? 300;
   const format = params.format ?? 'full';
 
   let processedSnapshot: string;
   let meta: ResponseMeta = {};
+
+  // Apply role filtering before truncation/summary
+  const filterOptions: FilterOptions = {};
+  if (params.includeRoles)
+    filterOptions.includeRoles = params.includeRoles;
+  if (params.excludeRoles)
+    filterOptions.excludeRoles = params.excludeRoles;
+
+  let filterMeta: ResponseMeta = {};
+  if (filterOptions.includeRoles || filterOptions.excludeRoles) {
+    const filtered = filterSnapshotText(snapshotText, filterOptions);
+    snapshotText = filtered.text;
+    if (filtered.meta.filtered) {
+      filterMeta = {
+        filtered: true,
+        filteredOut: filtered.meta.filteredOut,
+        filterType: filtered.meta.filterType,
+        filterRoles: filtered.meta.roles
+      };
+    }
+  }
 
   if (format === 'summary') {
     // Generate summary format
@@ -302,6 +329,9 @@ function enhanceSnapshotResponse(
     processedSnapshot = truncated.text;
     meta = buildResponseMeta({ truncation: truncated.meta });
   }
+
+  // Merge filter meta
+  Object.assign(meta, filterMeta);
 
   // Replace the snapshot in the response
   let newText = text.replace(

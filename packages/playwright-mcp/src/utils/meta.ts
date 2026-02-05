@@ -29,6 +29,10 @@ export interface ResponseMeta {
   sizeBytes?: number;
   maxDepthReached?: boolean;
   format?: string;
+  filtered?: boolean;
+  filteredOut?: number;
+  filterType?: string;
+  filterRoles?: string[];
 }
 
 /**
@@ -43,6 +47,10 @@ export function buildResponseMeta(options: {
   dimensions?: string;
   sizeBytes?: number;
   format?: string;
+  filtered?: boolean;
+  filteredOut?: number;
+  filterType?: string;
+  filterRoles?: string[];
 }): ResponseMeta {
   const meta: ResponseMeta = {};
 
@@ -82,6 +90,13 @@ export function buildResponseMeta(options: {
 
   if (options.format) {
     meta.format = options.format;
+  }
+
+  if (options.filtered) {
+    meta.filtered = options.filtered;
+    meta.filteredOut = options.filteredOut;
+    meta.filterType = options.filterType;
+    meta.filterRoles = options.filterRoles;
   }
 
   return meta;
@@ -126,6 +141,12 @@ export function formatMetaAsMarkdown(meta: ResponseMeta): string {
 
   if (meta.maxDepthReached) {
     lines.push(`- Max depth reached: yes`);
+  }
+
+  if (meta.filtered) {
+    lines.push(`- Filtered: yes (${meta.filterType} ${meta.filterRoles?.join(', ')})`);
+    if (meta.filteredOut)
+      lines.push(`- Filtered out: ${meta.filteredOut} elements`);
   }
 
   return lines.length > 0 ? lines.join('\n') : '';
