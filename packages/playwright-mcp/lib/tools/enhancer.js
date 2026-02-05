@@ -53,6 +53,10 @@ function enhanceToolResponse(response, context) {
     if (toolName === 'browser_evaluate' || toolName === 'browser_run_code') {
         return enhanceCodeExecutionResponse(response, params);
     }
+    // Handle screenshot quality parameters
+    if (toolName === 'browser_take_screenshot') {
+        return enhanceScreenshotResponse(response, params);
+    }
     return response;
 }
 /**
@@ -436,6 +440,95 @@ function enhanceCodeExecutionResponse(response, params) {
             ...response,
             content: [{ type: 'text', text: newText }, ...response.content.filter(c => c.type !== 'text')]
         };
+    }
+    return response;
+}
+/**
+ * Enhance screenshot response with quality and jpegQuality parameters
+ */
+function enhanceScreenshotResponse(response, params) {
+    if (!response.content || response.content.length === 0) {
+        return response;
+    }
+    // Find the image content in the response
+    const imageContent = response.content.find(c => c.type === 'resource' && c.mimeType?.startsWith('image/'));
+    if (!imageContent || !imageContent.data) {
+        return response;
+    }
+    const quality = params.quality ?? 'medium';
+    const jpegQuality = params.jpegQuality ?? 80;
+    const imageType = params.type ?? 'png';
+    try {
+        // Load image processing libraries from playwright-core
+        const { PNG } = require('playwright-core/lib/utilsBundle');
+        const jpegjs = require('playwright-core/lib/utilsBundle').jpegjs;
+        const { scaleImageToSize } = require('playwright-core/lib/utils');
+        // Decode the base64 image data
+        const imageBuffer = Buffer.from(imageContent.data, 'base64');
+        // Decode the image
+        const image = imageType === 'png'
+            ? PNG.sync.read(imageBuffer)
+            : jpegjs.decode(imageBuffer, { maxMemoryUsageInMB: 512 });
+        let processedBuffer = imageBuffer;
+        let wasModified = false;
+        const meta = {};
+        // Apply quality (resizing)
+        if (quality !== 'full') {
+            const targetWidth = quality === 'thumbnail' ? 400 : 800;
+            if (image.width > targetWidth) {
+                const scale = targetWidth / image.width;
+                const newWidth = Math.round(image.width * scale);
+                const newHeight = Math.round(image.height * scale);
+                const scaledImage = scaleImageToSize(image, { width: newWidth, height: newHeight });
+                // Re-encode the scaled image
+                if (imageType === 'png') {
+                    processedBuffer = PNG.sync.write(scaledImage);
+                }
+                else {
+                    processedBuffer = jpegjs.encode(scaledImage, jpegQuality).data;
+                }
+                wasModified = true;
+                meta.dimensions = `${newWidth}x${newHeight}`;
+                meta.quality = quality;
+                meta.hint = `Resized from ${image.width}x${image.height}`;
+            }
+        }
+        else if (imageType === 'jpeg' && jpegQuality !== 80) {
+            // For JPEG, recompress with specified quality even if not resizing
+            const scaledImage = scaleImageToSize(image, { width: image.width, height: image.height });
+            processedBuffer = jpegjs.encode(scaledImage, jpegQuality).data;
+            wasModified = true;
+            meta.quality = `jpeg quality: ${jpegQuality}`;
+        }
+        // Update the response if we modified the image
+        if (wasModified) {
+            const newContent = response.content.map(c => {
+                if (c === imageContent) {
+                    return {
+                        ...c,
+                        data: processedBuffer.toString('base64')
+                    };
+                }
+                return c;
+            });
+            // Update text content with meta info
+            const textContent = response.content.find(c => c.type === 'text');
+            if (textContent && textContent.text) {
+                const newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
+                return {
+                    ...response,
+                    content: newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c)
+                };
+            }
+            return {
+                ...response,
+                content: newContent
+            };
+        }
+    }
+    catch (error) {
+        // If processing fails, return original response
+        console.error('Failed to process screenshot:', error);
     }
     return response;
 }
