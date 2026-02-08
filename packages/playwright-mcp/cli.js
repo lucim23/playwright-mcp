@@ -15,10 +15,90 @@
  * limitations under the License.
  */
 
+// --- Enhancement layer ---
+// Intercept the upstream server module in Node's require cache BEFORE
+// program.js is loaded. program.js lazily reads mcpServer.start through
+// getters, so our replacement is picked up when the CLI action runs.
+
+const { enhancedToolSchemas, enhanceToolResponse } = require('./lib/index');
+
+function mergeToolSchema(tool, enhancements) {
+  const enhanced = { ...tool };
+  if (tool.inputSchema && enhancements.additionalProperties) {
+    enhanced.inputSchema = {
+      ...tool.inputSchema,
+      properties: {
+        ...(tool.inputSchema.properties || {}),
+        ...enhancements.additionalProperties
+      }
+    };
+  }
+  if (enhancements.outputSchema)
+    enhanced.outputSchema = enhancements.outputSchema;
+  return enhanced;
+}
+
+function wrapBackend(backend) {
+  const origListTools = backend.listTools.bind(backend);
+  const origCallTool = backend.callTool.bind(backend);
+
+  backend.listTools = async function() {
+    const tools = await origListTools();
+    return tools.map(tool => {
+      const enhancements = enhancedToolSchemas[tool.name];
+      return enhancements ? mergeToolSchema(tool, enhancements) : tool;
+    });
+  };
+
+  backend.callTool = async function(name, args, progress) {
+    const result = await origCallTool(name, args, progress);
+    if (enhancedToolSchemas[name]) {
+      return enhanceToolResponse(result, {
+        toolName: name,
+        params: args,
+        config: {}
+      });
+    }
+    return result;
+  };
+
+  return backend;
+}
+
+// Load the original server module and capture its start function
+const serverModulePath = require.resolve('playwright/lib/mcp/sdk/server');
+const serverModule = require(serverModulePath);
+const originalStart = serverModule.start;
+
+function enhancedStart(factory, options) {
+  const origCreate = factory.create.bind(factory);
+  const wrappedFactory = {
+    ...factory,
+    create: function() {
+      return wrapBackend(origCreate());
+    }
+  };
+  return originalStart(wrappedFactory, options);
+}
+
+// Build a replacement exports object that overrides 'start'
+const wrappedExports = {};
+for (const key of Object.getOwnPropertyNames(serverModule)) {
+  if (key === 'start') {
+    wrappedExports[key] = enhancedStart;
+  } else {
+    const desc = Object.getOwnPropertyDescriptor(serverModule, key);
+    Object.defineProperty(wrappedExports, key, desc);
+  }
+}
+require.cache[serverModulePath].exports = wrappedExports;
+
+// --- Standard CLI setup ---
+
 const { program } = require('playwright-core/lib/utilsBundle');
 const { decorateCommand } = require('playwright/lib/mcp/program');
 
 const packageJSON = require('./package.json');
 const p = program.version('Version ' + packageJSON.version).name('Playwright MCP');
-decorateCommand(p, packageJSON.version)
+decorateCommand(p, packageJSON.version);
 void program.parseAsync(process.argv);

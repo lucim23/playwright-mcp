@@ -189,6 +189,54 @@ export const enhancedToolSchemas = {
       oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
     }
   },
+  browser_navigate_forward: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
+  browser_reload: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns reload confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
+  browser_fill_form: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
+  browser_file_upload: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
+  browser_check: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
+  browser_uncheck: {
+    additionalProperties: { ...snapshotControlParams },
+    outputSchema: {
+      type: 'object',
+      description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
+      oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
+    }
+  },
   browser_wait_for: {
     additionalProperties: { ...snapshotControlParams },
     outputSchema: {

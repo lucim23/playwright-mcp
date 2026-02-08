@@ -885,6 +885,654 @@ export declare const enhancedToolSchemas: {
             })[];
         };
     };
+    browser_navigate_forward: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
+    browser_reload: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
+    browser_fill_form: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
+    browser_file_upload: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
+    browser_check: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
+    browser_uncheck: {
+        additionalProperties: {
+            returnSnapshot: {
+                type: string;
+                default: boolean;
+                description: string;
+            };
+            snapshotMaxElements: {
+                type: string;
+                default: number;
+                minimum: number;
+                maximum: number;
+                description: string;
+            };
+            snapshotFormat: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
+            snapshotIncludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+            snapshotExcludeRoles: {
+                type: string;
+                items: {
+                    type: string;
+                };
+                description: string;
+            };
+        };
+        outputSchema: {
+            type: string;
+            description: string;
+            oneOf: ({
+                type: string;
+                description: string;
+                properties: {
+                    result: {
+                        type: string;
+                        description: string;
+                    };
+                    pageUrl: {
+                        type: string;
+                        description: string;
+                    };
+                    pageTitle: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            snapshotDisabled: {
+                                type: string;
+                                const: boolean;
+                            };
+                            reason: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            } | {
+                type: string;
+                description: string;
+                properties: {
+                    page: {
+                        type: string;
+                        properties: {
+                            url: {
+                                type: string;
+                            };
+                            title: {
+                                type: string;
+                            };
+                            console: {
+                                type: string;
+                                description: string;
+                            };
+                        };
+                    };
+                    snapshot: {
+                        type: string;
+                        description: string;
+                    };
+                    meta: {
+                        type: string;
+                        properties: {
+                            truncated: {
+                                type: string;
+                            };
+                            returnedCount: {
+                                type: string;
+                            };
+                            totalCount: {
+                                type: string;
+                            };
+                        };
+                    };
+                };
+            })[];
+        };
+    };
     browser_wait_for: {
         additionalProperties: {
             returnSnapshot: {
