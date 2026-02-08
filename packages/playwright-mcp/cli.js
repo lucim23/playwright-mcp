@@ -65,8 +65,15 @@ function wrapBackend(backend) {
   return backend;
 }
 
-// Load the original server module and capture its start function
-const serverModulePath = require.resolve('playwright/lib/mcp/sdk/server');
+// Load the original server module and capture its start function.
+// We resolve the path manually because 'playwright/lib/mcp/sdk/server' is
+// not in the package's "exports" map — require.resolve() would throw
+// ERR_PACKAGE_PATH_NOT_EXPORTED. program.js uses a relative require
+// ('./sdk/server') which bypasses the exports check, so we do the same
+// by constructing the absolute path from the playwright package root.
+const path = require('path');
+const playwrightDir = path.dirname(require.resolve('playwright/package.json'));
+const serverModulePath = path.join(playwrightDir, 'lib', 'mcp', 'sdk', 'server.js');
 const serverModule = require(serverModulePath);
 const originalStart = serverModule.start;
 
