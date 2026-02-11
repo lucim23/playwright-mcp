@@ -68,200 +68,57 @@ const snapshotControlParams = {
     }
 };
 /**
- * Common output schema components for reuse
- */
-const outputSchemas = {
-    // Page info included in most responses
-    pageInfo: {
-        type: 'object',
-        properties: {
-            pageUrl: { type: 'string', description: 'Current page URL' },
-            pageTitle: { type: 'string', description: 'Current page title' }
-        }
-    },
-    // Meta info for truncated responses
-    truncationMeta: {
-        type: 'object',
-        properties: {
-            truncated: { type: 'boolean', description: 'Whether output was truncated' },
-            returnedCount: { type: 'integer', description: 'Number of items returned' },
-            totalCount: { type: 'integer', description: 'Total items available' }
-        }
-    },
-    // Action confirmation (when returnSnapshot=false)
-    actionConfirmation: {
-        type: 'object',
-        description: 'Compact confirmation when returnSnapshot=false (default)',
-        properties: {
-            result: { type: 'string', description: 'Action confirmation message' },
-            pageUrl: { type: 'string', description: 'Current page URL' },
-            pageTitle: { type: 'string', description: 'Current page title' },
-            meta: {
-                type: 'object',
-                properties: {
-                    snapshotDisabled: { type: 'boolean', const: true },
-                    reason: { type: 'string' }
-                }
-            }
-        }
-    },
-    // Full snapshot response (when returnSnapshot=true)
-    snapshotResponse: {
-        type: 'object',
-        description: 'Full response when returnSnapshot=true',
-        properties: {
-            page: {
-                type: 'object',
-                properties: {
-                    url: { type: 'string' },
-                    title: { type: 'string' },
-                    console: { type: 'string', description: 'Console message counts' }
-                }
-            },
-            snapshot: { type: 'string', description: 'YAML accessibility tree with element refs' },
-            meta: {
-                type: 'object',
-                properties: {
-                    truncated: { type: 'boolean' },
-                    returnedCount: { type: 'integer' },
-                    totalCount: { type: 'integer' }
-                }
-            }
-        }
-    }
-};
-/**
  * Enhanced tool schemas that add new parameters to existing tools.
  * These are merged with the original schemas when creating the connection.
  */
 exports.enhancedToolSchemas = {
     browser_click: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_type: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_hover: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_drag: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_select_option: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_press_key: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_navigate: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_navigate_back: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_navigate_forward: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns navigation confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_reload: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns reload confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_fill_form: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_file_upload: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_check: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_uncheck: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns action confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_wait_for: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns wait confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_resize: {
         additionalProperties: { ...snapshotControlParams },
-        outputSchema: {
-            type: 'object',
-            description: 'Returns resize confirmation (default) or snapshot if returnSnapshot=true. Use snapshotMaxElements/snapshotFormat to control output.',
-            oneOf: [outputSchemas.actionConfirmation, outputSchemas.snapshotResponse]
-        }
     },
     browser_snapshot: {
         additionalProperties: {
@@ -289,38 +146,6 @@ exports.enhancedToolSchemas = {
                 description: 'Exclude elements with these roles (e.g. ["generic", "group"]). Children promoted to parent level.'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Accessibility snapshot of the page',
-            properties: {
-                page: {
-                    type: 'object',
-                    properties: {
-                        url: { type: 'string', description: 'Current page URL' },
-                        title: { type: 'string', description: 'Current page title' },
-                        console: { type: 'string', description: 'Console error/warning counts' }
-                    }
-                },
-                snapshot: {
-                    type: 'string',
-                    description: 'YAML accessibility tree (format=full) or compact summary (format=summary). Elements have [ref=X] attributes for interaction.'
-                },
-                events: {
-                    type: 'array',
-                    description: 'Recent console events and warnings',
-                    items: { type: 'string' }
-                },
-                meta: {
-                    type: 'object',
-                    properties: {
-                        format: { type: 'string', enum: ['full', 'summary'] },
-                        truncated: { type: 'boolean', description: 'Whether elements were truncated' },
-                        returnedCount: { type: 'integer', description: 'Elements returned' },
-                        totalCount: { type: 'integer', description: 'Total elements on page' }
-                    }
-                }
-            }
-        }
     },
     browser_console_messages: {
         additionalProperties: {
@@ -341,25 +166,6 @@ exports.enhancedToolSchemas = {
                 description: 'ISO timestamp - return messages after this time'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Console messages from the page',
-            properties: {
-                result: {
-                    type: 'string',
-                    description: 'Console messages list or counts summary (if countOnly=true)'
-                },
-                meta: {
-                    type: 'object',
-                    properties: {
-                        truncated: { type: 'boolean' },
-                        returnedCount: { type: 'integer' },
-                        totalCount: { type: 'integer' },
-                        limit: { type: 'integer' }
-                    }
-                }
-            }
-        }
     },
     browser_network_requests: {
         additionalProperties: {
@@ -382,25 +188,6 @@ exports.enhancedToolSchemas = {
                 description: 'Output format: "full" or "compact"'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Network requests made by the page',
-            properties: {
-                result: {
-                    type: 'string',
-                    description: 'Network requests list or counts by status (if countOnly=true)'
-                },
-                meta: {
-                    type: 'object',
-                    properties: {
-                        truncated: { type: 'boolean' },
-                        returnedCount: { type: 'integer' },
-                        totalCount: { type: 'integer' },
-                        limit: { type: 'integer' }
-                    }
-                }
-            }
-        }
     },
     browser_take_screenshot: {
         additionalProperties: {
@@ -418,25 +205,6 @@ exports.enhancedToolSchemas = {
                 description: 'JPEG quality (1-100) when type is jpeg. Default: 80'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Screenshot of the page or element',
-            properties: {
-                image: {
-                    type: 'string',
-                    description: 'Base64-encoded image data (if no filename specified)',
-                    contentEncoding: 'base64'
-                },
-                filename: {
-                    type: 'string',
-                    description: 'Path to saved screenshot file (if filename specified)'
-                },
-                mimeType: {
-                    type: 'string',
-                    enum: ['image/png', 'image/jpeg']
-                }
-            }
-        }
     },
     browser_evaluate: {
         additionalProperties: {
@@ -448,24 +216,6 @@ exports.enhancedToolSchemas = {
                 description: 'Max output characters. Default: 10000'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Result of JavaScript evaluation',
-            properties: {
-                result: {
-                    type: 'string',
-                    description: 'Serialized return value from the evaluated function'
-                },
-                meta: {
-                    type: 'object',
-                    properties: {
-                        truncated: { type: 'boolean' },
-                        returnedCount: { type: 'integer', description: 'Characters returned' },
-                        totalCount: { type: 'integer', description: 'Total characters before truncation' }
-                    }
-                }
-            }
-        }
     },
     browser_run_code: {
         additionalProperties: {
@@ -481,39 +231,10 @@ exports.enhancedToolSchemas = {
                 description: 'Save output to file instead of returning'
             }
         },
-        outputSchema: {
-            type: 'object',
-            description: 'Result of Playwright code execution',
-            properties: {
-                result: {
-                    type: 'string',
-                    description: 'Return value from the Playwright code, or file path if outputFile specified'
-                },
-                code: {
-                    type: 'string',
-                    description: 'The executed code snippet'
-                },
-                page: {
-                    type: 'object',
-                    properties: {
-                        url: { type: 'string' },
-                        title: { type: 'string' }
-                    }
-                },
-                meta: {
-                    type: 'object',
-                    properties: {
-                        truncated: { type: 'boolean' },
-                        returnedCount: { type: 'integer' },
-                        totalCount: { type: 'integer' }
-                    }
-                }
-            }
-        }
     }
 };
 /**
- * Merge enhanced parameters and output schema into a tool definition
+ * Merge enhanced input parameters into a tool definition
  */
 function mergeToolSchema(tool, enhancements) {
     const enhancedTool = { ...tool };
@@ -526,10 +247,6 @@ function mergeToolSchema(tool, enhancements) {
                 ...enhancements.additionalProperties
             }
         };
-    }
-    // Add output schema if provided
-    if (enhancements.outputSchema) {
-        enhancedTool.outputSchema = enhancements.outputSchema;
     }
     return enhancedTool;
 }
@@ -550,6 +267,13 @@ async function createConnection(config, contextGetter) {
             const result = await originalToolsListHandler(request);
             if (result && result.tools && Array.isArray(result.tools)) {
                 result.tools = result.tools.map((tool) => {
+                    // Strip outputSchema from upstream tools — our wrapper returns unstructured
+                    // content (text blocks), but MCP requires structuredContent when outputSchema
+                    // is present. Removing it avoids protocol validation errors.
+                    if (tool.outputSchema) {
+                        const { outputSchema: _, ...toolWithoutSchema } = tool;
+                        tool = toolWithoutSchema;
+                    }
                     const enhancements = exports.enhancedToolSchemas[tool.name];
                     if (enhancements) {
                         return mergeToolSchema(tool, enhancements);
