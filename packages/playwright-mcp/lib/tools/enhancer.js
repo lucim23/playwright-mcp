@@ -535,27 +535,26 @@ function enhanceScreenshotResponse(response, params) {
                 return { ...c, data: processedBuffer.toString('base64') };
             return c;
         });
-        // Update text block: replace the original path with the temp path
-        if (textContent && tempFilePath) {
-            let newText = originalText;
-            // Update the code comment path
-            if (originalPath)
-                newText = newText.split(originalPath).join(tempFilePath);
-            // Update the markdown link
-            const linkMatch = newText.match(/\[([^\]]+)\]\([^)]+\)/);
-            if (linkMatch)
-                newText = newText.replace(linkMatch[0], `[${linkMatch[1]}](${tempFilePath})`);
-            newText = (0, meta_1.appendMetaToResponse)(newText, meta);
-            newContent = newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c);
-        }
-        else if (wasResized && textContent) {
-            const newText = (0, meta_1.appendMetaToResponse)(originalText, meta);
-            newContent = newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c);
-        }
+        // Build a minimal text block with only ### Result
+        const filePath = tempFilePath ?? originalPath ?? '';
+        const resultSection = extractResultSection(originalText);
+        let newText = resultSection
+            ? resultSection.replace(/\([^)]+\)/, `(${filePath})`)
+            : `### Result\n- [Screenshot](${filePath})`;
+        newText = (0, meta_1.appendMetaToResponse)(newText, meta);
+        newContent = newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c);
         return { ...response, content: newContent };
     }
     catch (_error) {
         return response;
     }
+}
+/**
+ * Extract just the ### Result section from upstream markdown response text.
+ * Returns undefined if the section isn't found.
+ */
+function extractResultSection(text) {
+    const match = text.match(/### Result\n[\s\S]*?(?=###|$)/);
+    return match?.[0]?.trimEnd();
 }
 //# sourceMappingURL=enhancer.js.map
