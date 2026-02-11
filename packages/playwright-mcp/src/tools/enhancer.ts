@@ -638,24 +638,28 @@ function enhanceScreenshotResponse(
     const saveMatch = originalText.match(/save it as (.+)\n/);
     const originalPath = saveMatch?.[1];
 
+    const userSpecifiedFile = !!params.filename;
     let tempFilePath: string | undefined;
-    if (originalPath) {
+
+    if (originalPath && userSpecifiedFile) {
+      // Filename specified: persist to temp dir so callers can access it
       const tempDir = getScreenshotTempDir();
-      const basename = params.filename
-        ? path.basename(params.filename)
-        : path.basename(originalPath);
+      const basename = path.basename(params.filename);
       tempFilePath = path.join(tempDir, basename);
 
       try {
-        // Write the (possibly resized) image to the temp dir
         fs.writeFileSync(tempFilePath, processedBuffer);
-
-        // Remove the original file from the working directory
-        if (path.resolve(originalPath) !== path.resolve(tempFilePath)) {
+        if (path.resolve(originalPath) !== path.resolve(tempFilePath))
           fs.unlinkSync(originalPath);
-        }
       } catch (_e) {
         // Best-effort — response image data is still returned either way
+      }
+    } else if (originalPath) {
+      // No filename: image data is in the response, delete the temp file
+      try {
+        fs.unlinkSync(originalPath);
+      } catch (_e) {
+        // Best-effort cleanup
       }
     }
 
@@ -669,11 +673,17 @@ function enhanceScreenshotResponse(
     });
 
     // Build a minimal text block with only ### Result
-    const filePath = tempFilePath ?? originalPath ?? '';
-    const resultSection = extractResultSection(originalText);
-    let newText = resultSection
-      ? resultSection.replace(/\([^)]+\)/, `(${filePath})`)
-      : `### Result\n- [Screenshot](${filePath})`;
+    let newText: string;
+    if (tempFilePath) {
+      // File persisted — include the path
+      const resultSection = extractResultSection(originalText);
+      newText = resultSection
+        ? resultSection.replace(/\([^)]+\)/, `(${tempFilePath})`)
+        : `### Result\n- [Screenshot](${tempFilePath})`;
+    } else {
+      // No file on disk — image data is inline in the response
+      newText = '### Result\nScreenshot captured (image data returned inline)';
+    }
     newText = appendMetaToResponse(newText, meta);
 
     newContent = newContent.map(c =>
