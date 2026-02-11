@@ -34,4 +34,5 @@ __exportStar(require("./meta"), exports);
 __exportStar(require("./confirmation"), exports);
 __exportStar(require("./summary"), exports);
 __exportStar(require("./filter"), exports);
+__exportStar(require("./tempdir"), exports);
 //# sourceMappingURL=index.js.map

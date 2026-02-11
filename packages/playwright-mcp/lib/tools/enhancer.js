@@ -14,12 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.enhanceToolResponse = enhanceToolResponse;
+const fs_1 = __importDefault(require("fs"));
+const path_1 = __importDefault(require("path"));
 const truncate_1 = require("../utils/truncate");
 const meta_1 = require("../utils/meta");
 const summary_1 = require("../utils/summary");
 const filter_1 = require("../utils/filter");
+const tempdir_1 = require("../utils/tempdir");
 const confirmation_1 = require("../utils/confirmation");
 /**
  * Apply enhancements to a tool response based on the tool name and parameters
@@ -444,15 +450,14 @@ function enhanceCodeExecutionResponse(response, params) {
     return response;
 }
 /**
- * Enhance screenshot response with quality and jpegQuality parameters.
+ * Enhance screenshot response:
  *
- * Resizes the screenshot image based on the quality parameter:
- *   - thumbnail: ~400px width
- *   - medium: ~800px width (default)
- *   - full: original size
- *
- * For JPEG images, applies the jpegQuality compression level (1-100, default 80).
- * Updates both the response content (base64) and the file on disk.
+ * 1. Moves the saved file from the working directory to the OS temp folder
+ *    (via getScreenshotTempDir()) so screenshots don't clutter the project.
+ * 2. Applies quality/resize when requested (thumbnail ~400px, medium ~800px).
+ * 3. Always ensures the image data block is present in the response so
+ *    callers get the full picture inline without needing to read the file.
+ * 4. Updates the text block with the full absolute path to the temp file.
  */
 function enhanceScreenshotResponse(response, params) {
     if (!response.content || response.content.length === 0)
@@ -473,7 +478,7 @@ function enhanceScreenshotResponse(response, params) {
             ? PNG.sync.read(imageBuffer)
             : jpegjs.decode(imageBuffer, { maxMemoryUsageInMB: 512 });
         let processedBuffer = imageBuffer;
-        let wasModified = false;
+        let wasResized = false;
         const meta = {};
         // Apply quality (resizing)
         if (quality !== 'full') {
@@ -486,48 +491,66 @@ function enhanceScreenshotResponse(response, params) {
                 processedBuffer = imageType === 'png'
                     ? PNG.sync.write(scaledImage)
                     : jpegjs.encode(scaledImage, jpegQuality).data;
-                wasModified = true;
+                wasResized = true;
                 meta.dimensions = `${newWidth}x${newHeight}`;
                 meta.quality = quality;
                 meta.hint = `Resized from ${image.width}x${image.height}`;
             }
         }
         else if (imageType === 'jpeg' && jpegQuality !== 80) {
-            // For full-size JPEG, recompress with specified quality
             const scaledImage = scaleImageToSize(image, { width: image.width, height: image.height });
             processedBuffer = jpegjs.encode(scaledImage, jpegQuality).data;
-            wasModified = true;
+            wasResized = true;
             meta.quality = `jpeg quality: ${jpegQuality}`;
         }
-        if (!wasModified)
-            return response;
-        // Overwrite the file on disk with the processed image
-        const responseText = response.content.find(c => c.type === 'text');
-        if (responseText && responseText.text) {
-            const fileMatch = responseText.text.match(/save it as (.+)\n/);
-            if (fileMatch) {
-                try {
-                    require('fs').writeFileSync(fileMatch[1], processedBuffer);
-                }
-                catch (_e) {
-                    // Best-effort disk write; response image is still updated
+        // --- Move file to OS temp dir ---
+        const textContent = response.content.find(c => c.type === 'text');
+        const originalText = textContent?.text ?? '';
+        // Parse the file path the upstream tool saved
+        const saveMatch = originalText.match(/save it as (.+)\n/);
+        const originalPath = saveMatch?.[1];
+        let tempFilePath;
+        if (originalPath) {
+            const tempDir = (0, tempdir_1.getScreenshotTempDir)();
+            const basename = params.filename
+                ? path_1.default.basename(params.filename)
+                : path_1.default.basename(originalPath);
+            tempFilePath = path_1.default.join(tempDir, basename);
+            try {
+                // Write the (possibly resized) image to the temp dir
+                fs_1.default.writeFileSync(tempFilePath, processedBuffer);
+                // Remove the original file from the working directory
+                if (path_1.default.resolve(originalPath) !== path_1.default.resolve(tempFilePath)) {
+                    fs_1.default.unlinkSync(originalPath);
                 }
             }
+            catch (_e) {
+                // Best-effort — response image data is still returned either way
+            }
         }
-        // Update the response image content with processed data
-        const newContent = response.content.map(c => {
-            if (c === imageContent)
+        // --- Build updated response ---
+        // Update image data in the content block (resized or original)
+        let newContent = response.content.map(c => {
+            if (c === imageContent && wasResized)
                 return { ...c, data: processedBuffer.toString('base64') };
             return c;
         });
-        // Append meta info to the text response
-        const textContent = response.content.find(c => c.type === 'text');
-        if (textContent && textContent.text) {
-            const newText = (0, meta_1.appendMetaToResponse)(textContent.text, meta);
-            return {
-                ...response,
-                content: newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c)
-            };
+        // Update text block: replace the original path with the temp path
+        if (textContent && tempFilePath) {
+            let newText = originalText;
+            // Update the code comment path
+            if (originalPath)
+                newText = newText.split(originalPath).join(tempFilePath);
+            // Update the markdown link
+            const linkMatch = newText.match(/\[([^\]]+)\]\([^)]+\)/);
+            if (linkMatch)
+                newText = newText.replace(linkMatch[0], `[${linkMatch[1]}](${tempFilePath})`);
+            newText = (0, meta_1.appendMetaToResponse)(newText, meta);
+            newContent = newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c);
+        }
+        else if (wasResized && textContent) {
+            const newText = (0, meta_1.appendMetaToResponse)(originalText, meta);
+            newContent = newContent.map(c => c.type === 'text' ? { ...c, text: newText } : c);
         }
         return { ...response, content: newContent };
     }
