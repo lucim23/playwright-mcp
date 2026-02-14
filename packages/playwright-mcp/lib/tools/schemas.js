@@ -122,7 +122,7 @@ exports.enhancedNetworkRequestsSchema = zod_1.z.object({
 });
 // Enhanced screenshot schema
 exports.enhancedScreenshotSchema = zod_1.z.object({
-    type: zod_1.z.enum(['png', 'jpeg']).default('png').describe('Image format for the screenshot. Default is png.'),
+    type: zod_1.z.enum(['png', 'jpeg']).default('jpeg').describe('Image format for the screenshot. Default is jpeg.'),
     filename: zod_1.z.string().optional().describe('File name to save the screenshot to. Defaults to `page-{timestamp}.{png|jpeg}` if not specified. Prefer relative file names to stay within the output directory.'),
     element: zod_1.z.string().optional().describe('Human-readable element description used to obtain permission to screenshot the element. If not provided, the screenshot will be taken of viewport. If element is provided, ref must be provided too.'),
     ref: zod_1.z.string().optional().describe('Exact target element reference from the page snapshot. If not provided, the screenshot will be taken of viewport. If ref is provided, element must be provided too.'),
