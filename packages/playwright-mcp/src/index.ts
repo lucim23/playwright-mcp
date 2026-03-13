@@ -339,4 +339,5 @@ export async function createConnection(
 
 // Re-export utilities
 export { enhanceToolResponse } from './tools/enhancer';
+export { fileDownloadToolDefinition, handleFileDownload } from './tools/fileDownload';
 export * from './utils';

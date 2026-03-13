@@ -29,7 +29,7 @@ var __exportStar = (this && this.__exportStar) || function(m, exports) {
     for (var p in m) if (p !== "default" && !Object.prototype.hasOwnProperty.call(exports, p)) __createBinding(exports, m, p);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.enhanceToolResponse = exports.enhancedToolSchemas = void 0;
+exports.handleFileDownload = exports.fileDownloadToolDefinition = exports.enhanceToolResponse = exports.enhancedToolSchemas = void 0;
 exports.createConnection = createConnection;
 const enhancer_1 = require("./tools/enhancer");
 const fileDownload_1 = require("./tools/fileDownload");
@@ -329,5 +329,8 @@ async function createConnection(config, contextGetter) {
 // Re-export utilities
 var enhancer_2 = require("./tools/enhancer");
 Object.defineProperty(exports, "enhanceToolResponse", { enumerable: true, get: function () { return enhancer_2.enhanceToolResponse; } });
+var fileDownload_2 = require("./tools/fileDownload");
+Object.defineProperty(exports, "fileDownloadToolDefinition", { enumerable: true, get: function () { return fileDownload_2.fileDownloadToolDefinition; } });
+Object.defineProperty(exports, "handleFileDownload", { enumerable: true, get: function () { return fileDownload_2.handleFileDownload; } });
 __exportStar(require("./utils"), exports);
 //# sourceMappingURL=index.js.map

@@ -727,5 +727,6 @@ export declare const enhancedToolSchemas: {
  */
 export declare function createConnection(config?: Config, contextGetter?: () => Promise<BrowserContext>): Promise<Server>;
 export { enhanceToolResponse } from './tools/enhancer';
+export { fileDownloadToolDefinition, handleFileDownload } from './tools/fileDownload';
 export * from './utils';
 //# sourceMappingURL=index.d.ts.map

@@ -20,10 +20,12 @@
 // program.js is loaded. program.js lazily reads mcpServer.start through
 // getters, so our replacement is picked up when the CLI action runs.
 
-const { enhancedToolSchemas, enhanceToolResponse } = require('./lib/index');
+const { enhancedToolSchemas, enhanceToolResponse, fileDownloadToolDefinition, handleFileDownload } = require('./lib/index');
 
 function mergeToolSchema(tool, enhancements) {
   const enhanced = { ...tool };
+  if (enhancements.description)
+    enhanced.description = enhancements.description;
   if (tool.inputSchema && enhancements.additionalProperties) {
     enhanced.inputSchema = {
       ...tool.inputSchema,
@@ -44,13 +46,18 @@ function wrapBackend(backend) {
 
   backend.listTools = async function() {
     const tools = await origListTools();
-    return tools.map(tool => {
+    const enhanced = tools.map(tool => {
       const enhancements = enhancedToolSchemas[tool.name];
       return enhancements ? mergeToolSchema(tool, enhancements) : tool;
     });
+    enhanced.push(fileDownloadToolDefinition);
+    return enhanced;
   };
 
   backend.callTool = async function(name, args, progress) {
+    if (name === 'file_download')
+      return handleFileDownload(args);
+
     const result = await origCallTool(name, args, progress);
     if (enhancedToolSchemas[name]) {
       return enhanceToolResponse(result, {
