@@ -17,7 +17,8 @@ export const fileDownloadToolDefinition = {
   name: 'file_download',
   description: 'Download a file from a URL and save it to a local path. Supports HTTP and HTTPS URLs. Follows redirects automatically.',
   inputSchema: {
-    type: 'object',
+    '$schema': 'https://json-schema.org/draft/2020-12/schema',
+    type: 'object' as const,
     properties: {
       url: {
         type: 'string',
@@ -28,7 +29,14 @@ export const fileDownloadToolDefinition = {
         description: 'Target file path (absolute or just a filename). Relative paths resolve from the current working directory.'
       }
     },
-    required: ['url', 'path']
+    required: ['url', 'path'] as const,
+    additionalProperties: false
+  },
+  annotations: {
+    title: 'File download',
+    readOnlyHint: false,
+    destructiveHint: false,
+    openWorldHint: true
   }
 };
 

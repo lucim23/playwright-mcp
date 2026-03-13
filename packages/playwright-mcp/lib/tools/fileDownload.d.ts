@@ -10,7 +10,8 @@ export declare const fileDownloadToolDefinition: {
     name: string;
     description: string;
     inputSchema: {
-        type: string;
+        $schema: string;
+        type: "object";
         properties: {
             url: {
                 type: string;
@@ -21,7 +22,14 @@ export declare const fileDownloadToolDefinition: {
                 description: string;
             };
         };
-        required: string[];
+        required: readonly ["url", "path"];
+        additionalProperties: boolean;
+    };
+    annotations: {
+        title: string;
+        readOnlyHint: boolean;
+        destructiveHint: boolean;
+        openWorldHint: boolean;
     };
 };
 export declare function handleFileDownload(params: FileDownloadParams): Promise<{

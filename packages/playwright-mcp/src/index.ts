@@ -292,10 +292,10 @@ export async function createConnection(
           }
           return tool;
         });
-      }
 
-      // Add custom tools that don't exist upstream
-      result.tools.push(fileDownloadToolDefinition);
+        // Add custom tools that don't exist upstream
+        result.tools.push(fileDownloadToolDefinition);
+      }
 
       return result;
     };

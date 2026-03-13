@@ -291,9 +291,9 @@ async function createConnection(config, contextGetter) {
                     }
                     return tool;
                 });
+                // Add custom tools that don't exist upstream
+                result.tools.push(fileDownload_1.fileDownloadToolDefinition);
             }
-            // Add custom tools that don't exist upstream
-            result.tools.push(fileDownload_1.fileDownloadToolDefinition);
             return result;
         };
         handlers.set('tools/list', wrappedToolsListHandler);
