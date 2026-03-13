@@ -671,7 +671,14 @@ export declare const enhancedToolSchemas: {
         };
     };
     browser_take_screenshot: {
+        description: string;
         additionalProperties: {
+            type: {
+                type: string;
+                enum: string[];
+                default: string;
+                description: string;
+            };
             quality: {
                 type: string;
                 enum: string[];

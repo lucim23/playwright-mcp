@@ -15,4 +15,5 @@
  */
 export * from './schemas';
 export * from './enhancer';
+export * from './fileDownload';
 //# sourceMappingURL=index.d.ts.map

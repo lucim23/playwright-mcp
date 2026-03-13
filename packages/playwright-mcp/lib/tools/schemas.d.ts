@@ -263,9 +263,9 @@ export declare const enhancedScreenshotSchema: z.ZodObject<{
     quality: z.ZodDefault<z.ZodOptional<z.ZodEnum<["thumbnail", "medium", "full"]>>>;
     jpegQuality: z.ZodDefault<z.ZodOptional<z.ZodNumber>>;
 }, "strip", z.ZodTypeAny, {
-    quality: "full" | "medium" | "thumbnail";
+    quality: "full" | "thumbnail" | "medium";
     jpegQuality: number;
-    type: "png" | "jpeg";
+    type: "jpeg" | "png";
     element?: string | undefined;
     ref?: string | undefined;
     filename?: string | undefined;
@@ -273,9 +273,9 @@ export declare const enhancedScreenshotSchema: z.ZodObject<{
 }, {
     element?: string | undefined;
     ref?: string | undefined;
-    quality?: "full" | "medium" | "thumbnail" | undefined;
+    quality?: "full" | "thumbnail" | "medium" | undefined;
     jpegQuality?: number | undefined;
-    type?: "png" | "jpeg" | undefined;
+    type?: "jpeg" | "png" | undefined;
     filename?: string | undefined;
     fullPage?: boolean | undefined;
 }>;

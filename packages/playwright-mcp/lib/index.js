@@ -32,6 +32,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.enhanceToolResponse = exports.enhancedToolSchemas = void 0;
 exports.createConnection = createConnection;
 const enhancer_1 = require("./tools/enhancer");
+const fileDownload_1 = require("./tools/fileDownload");
 // Import the original createConnection from playwright
 const { createConnection: originalCreateConnection } = require('playwright/lib/mcp/index');
 /**
@@ -190,19 +191,26 @@ exports.enhancedToolSchemas = {
         },
     },
     browser_take_screenshot: {
+        description: 'Take a screenshot of the current page or a specific element. Supports PNG and JPEG formats with configurable resolution and compression.\n\nResolution presets (quality parameter):\n- "thumbnail": Resizes to ~400px width. Produces very small images ideal for quick visual checks or thumbnails. Lowest fidelity.\n- "medium" (default): Resizes to ~800px width. Good balance of clarity and size for most use cases — UI verification, visual diffing, documentation.\n- "full": No resizing — captures at the original viewport resolution (typically 1280px). Best fidelity but largest file size.\n\nImage format (type parameter):\n- "png": Lossless compression. Larger files but pixel-perfect. Best for screenshots containing text, diagrams, or where exact color accuracy matters.\n- "jpeg" (default): Lossy compression controlled by jpegQuality (1-100, default 80). Much smaller files. Best for photos or when file size matters more than pixel accuracy.\n\nAll screenshots are saved to the OS temp directory unless a custom filename is provided.',
         additionalProperties: {
+            type: {
+                type: 'string',
+                enum: ['png', 'jpeg'],
+                default: 'jpeg',
+                description: 'Image format. "jpeg" (default): lossy compression, smaller files. "png": lossless, pixel-perfect but larger.'
+            },
             quality: {
                 type: 'string',
                 enum: ['thumbnail', 'medium', 'full'],
-                default: 'medium',
-                description: 'Image quality: "thumbnail" (~400px), "medium" (~800px), "full" (original)'
+                default: 'thumbnail',
+                description: 'Resolution preset: "thumbnail" (~400px width, smallest file), "medium" (~800px width, balanced), "full" (original viewport resolution, largest file). Default: "thumbnail"'
             },
             jpegQuality: {
                 type: 'integer',
                 default: 80,
                 minimum: 1,
                 maximum: 100,
-                description: 'JPEG quality (1-100) when type is jpeg. Default: 80'
+                description: 'JPEG compression quality (1-100). Lower values produce smaller files with more artifacts. Only applies when type is "jpeg". Default: 80'
             }
         },
     },
@@ -238,6 +246,9 @@ exports.enhancedToolSchemas = {
  */
 function mergeToolSchema(tool, enhancements) {
     const enhancedTool = { ...tool };
+    // Override tool description if provided
+    if (enhancements.description)
+        enhancedTool.description = enhancements.description;
     // Merge input schema properties
     if (tool.inputSchema && enhancements.additionalProperties) {
         enhancedTool.inputSchema = {
@@ -281,6 +292,8 @@ async function createConnection(config, contextGetter) {
                     return tool;
                 });
             }
+            // Add custom tools that don't exist upstream
+            result.tools.push(fileDownload_1.fileDownloadToolDefinition);
             return result;
         };
         handlers.set('tools/list', wrappedToolsListHandler);
@@ -289,10 +302,13 @@ async function createConnection(config, contextGetter) {
     const originalToolsCallHandler = handlers.get('tools/call');
     if (originalToolsCallHandler) {
         const wrappedToolsCallHandler = async (request) => {
-            const result = await originalToolsCallHandler(request);
-            // Apply enhancements based on the tool and parameters
             const toolName = request.params?.name;
             const toolParams = request.params?.arguments || {};
+            // Handle custom tools before reaching upstream
+            if (toolName === 'file_download')
+                return (0, fileDownload_1.handleFileDownload)(toolParams);
+            const result = await originalToolsCallHandler(request);
+            // Apply enhancements based on the tool and parameters
             if (toolName && exports.enhancedToolSchemas[toolName]) {
                 const enhancementContext = {
                     toolName,

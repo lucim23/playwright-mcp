@@ -466,9 +466,9 @@ function enhanceScreenshotResponse(response, params) {
     const imageContent = response.content.find(c => c.type === 'image' && c.mimeType?.startsWith('image/'));
     if (!imageContent || !imageContent.data)
         return response;
-    const quality = params.quality ?? 'medium';
+    const quality = params.quality ?? 'thumbnail';
     const jpegQuality = params.jpegQuality ?? 80;
-    const imageType = params.type ?? 'png';
+    const imageType = params.type ?? 'jpeg';
     try {
         const { PNG } = require('playwright-core/lib/utilsBundle');
         const jpegjs = require('playwright-core/lib/utilsBundle').jpegjs;
