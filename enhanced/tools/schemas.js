@@ -225,4 +225,36 @@ function mergeToolSchema(tool, enhancement) {
   };
 }
 
-module.exports = { enhancedToolSchemas, actionToolNames, mergeToolSchema };
+/**
+ * `session` param schema injected into every tool coming back from
+ * upstream's `tools/list` (issue #13 / TK-6 -- named browser sessions). Every
+ * tool in that list is a browser tool that goes through a session's own
+ * `tools/call` handler, so unlike the other enhancements above this isn't
+ * keyed by tool name -- see `injectSessionParam` and enhanced/index.js's
+ * tools/list handler, which applies it while mapping upstream's list and
+ * skips it for the two tools this layer appends itself (`file_download`,
+ * which is session-agnostic, and `browser_session`, which manages sessions
+ * rather than running inside one and has its own bespoke schema).
+ */
+const SESSION_PARAM_SCHEMA = {
+  type: 'string',
+  maxLength: 64,
+  description:
+    'Optional named session. Different names get independent isolated browsers (own cookies/storage/tabs). ' +
+    'Omit for the default session.',
+};
+
+/**
+ * @param {any} tool
+ */
+function injectSessionParam(tool) {
+  if (!tool || !tool.inputSchema)
+    return tool;
+  const properties = { ...(tool.inputSchema.properties || {}), session: SESSION_PARAM_SCHEMA };
+  return {
+    ...tool,
+    inputSchema: { ...tool.inputSchema, properties },
+  };
+}
+
+module.exports = { enhancedToolSchemas, actionToolNames, mergeToolSchema, SESSION_PARAM_SCHEMA, injectSessionParam };

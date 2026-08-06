@@ -33,13 +33,20 @@ changes shape.
 2. Reads the returned MCP SDK `Server`'s private `_requestHandlers` Map.
 3. Replaces the `tools/list` and `tools/call` entries with wrappers that call
    through to the original handlers and then apply enhancements.
+4. (Named sessions, issue #13/TK-6) Wraps the primary server's `initialize`
+   entry too, but purely to *capture* the real client's handshake for reuse
+   by secondary sessions — the wrapper always forwards to, and returns
+   exactly what came back from, the original handler. See "Named browser
+   sessions" below for why secondary sessions need this at all.
 
 This is the **only** interception mechanism used anywhere in this layer — no
 second CLI-side monkeypatch. If `_requestHandlers`, or the `tools/list`
 /`tools/call` handlers on it, are missing or not functions, `createConnection`
-**throws immediately** with a descriptive error. This layer has broken
-silently twice before (once via the `cli.js` require-cache patch, once via
-the `packages/*` -> flat-repo + coreBundle move); the fix here is: never
+**throws immediately** with a descriptive error (this guard is shared code —
+`enhanced/utils/handlers.js` — used both for the primary server here and for
+every secondary session `enhanced/utils/sessions.js` creates). This layer has
+broken silently twice before (once via the `cli.js` require-cache patch, once
+via the `packages/*` -> flat-repo + coreBundle move); the fix here is: never
 again — degrade loudly, not silently.
 
 ## What's kept, dropped, and why
@@ -96,6 +103,11 @@ Other tools:
 - `browser_run_code_unsafe`: `maxOutputLength` (default 50000)
 - `browser_take_screenshot`: `type` default overridden to `jpeg` (upstream default is `png`) — only when the caller gave neither `type` nor `filename`; if a `filename` is given, upstream's own extension-based inference is left alone so a `filename: "foo.png"` call doesn't silently get jpeg bytes written into a `.png`-named file
 - `file_download` (new tool, see below)
+- `browser_session` (new tool, see "Named browser sessions" below)
+
+Every real (upstream) tool in `tools/list` — i.e. every browser tool, which
+in practice means every tool except `file_download` and `browser_session`
+themselves — also gets a `session` param; see "Named browser sessions" below.
 
 Every `tools/list` entry also has any `outputSchema` field defensively
 stripped (cheap, harmless insurance against an MCP protocol validation error,
@@ -131,6 +143,186 @@ rejecting private/loopback/link-local IP ranges). The EP-1 study report
 flagged this as a risk, but it wasn't part of TK-2's explicit hardening
 checklist and was left out rather than silently added as unscoped behavior.
 Flagging as a follow-up if the owner wants it.
+
+## Named browser sessions (issue [#13](../../issues/13), TK-6)
+
+Clients keep their existing config unchanged (e.g.
+`npx -y github:lucim23/playwright-mcp --isolated`, stdio) but can now drive
+multiple **independent, isolated browsers** from the same MCP connection by
+passing an optional `session: "<name>"` string on any browser tool call.
+Different names get their own browser (own cookies/storage/tabs); the same
+name always routes back to the same browser across calls.
+
+### Semantics
+
+- **No `session` param, or `session: "default"`** → the **default session**,
+  which *is* the primary server this layer already creates today — same
+  object, same handlers, same responses. This is a hard backward-compat
+  requirement: nothing about the default session's behavior, timing, or
+  identity changed to build this feature (see "Verification" below).
+- **Any other name** → lazily creates (on first use of that name) a whole
+  second upstream connection (`require('../index.js').createConnection()`,
+  the same call this layer already wraps for the primary session) and routes
+  that call — and every subsequent call using the same name — to it instead.
+- **Secondary sessions always launch their own brand-new, independent
+  browser process** — regardless of the primary session's own
+  isolated/persistent/CDP/remote/extension setting. A persistent (on-disk)
+  profile is inherently single-owner (upstream itself throws `"Browser is
+  already in use for <dir>..."` if two processes try to share one), and a
+  remote/CDP/extension endpoint is inherently a *shared* target, so there is
+  no correct way to give two *named* sessions independent state while
+  either of those apply — always launching a fresh local browser is the only
+  option that actually delivers "independent browsers" unconditionally. This
+  is implemented by `enhanced/utils/sessions.js`'s `launchSecondaryBrowser`,
+  which calls `playwright-core`'s standard **public** `chromium`/`firefox`/
+  `webkit` launchers directly (not upstream's own isolated-mode code path)
+  and hands the resulting context to upstream via `createConnection`'s
+  existing `contextGetter` parameter. See "Why secondary sessions launch
+  their own browser" in that file's module doc comment for the full
+  reasoning, including a real bug this design fixes — see "session
+  teardown actually frees the browser process" below.
+- Session names: non-empty strings, letters/digits/`_`/`-` only, max 64
+  characters. Anything else (path separators, `..`, dots, whitespace,
+  control characters, wrong type, too long) is rejected with an `isError`
+  text response — never thrown, never silently coerced.
+- The `session` key is always stripped from the arguments actually forwarded
+  to the underlying tool, so it never reaches upstream's own Zod validation
+  (relying on upstream silently ignoring an unrecognized property would be
+  fragile — a future `.strict()` schema change upstream could turn that into
+  a hard error).
+
+### The initialize-handshake wrinkle
+
+Upstream's browser backend isn't created when `createConnection()` returns —
+it's created lazily, on a server's first `tools/call`, by an internal
+`initializeServer()` helper (`playwright-core/lib/coreBundle.js`) that reads
+`server.getClientCapabilities()` / `server.getClientVersion()` (both only
+populated once the MCP SDK's `Server` has actually processed a real
+`initialize` request over a transport) to build the `clientInfo` object
+`{ cwd, clientName }` passed to the backend factory. A secondary session's
+`Server` is never `.connect()`-ed to any transport, so it would never
+receive that handshake and those accessors would stay `undefined` forever.
+
+Fix (verified empirically, not assumed — see `enhanced/tests/sessions.test.mjs`
+and the "Verification" note below): every secondary session's own
+`initialize` request handler — which the SDK's `Server` base class always
+registers in `_requestHandlers` at construction time, transport or not — is
+invoked directly, in-process, right after the session's connection is
+created, with a synthesized request:
+`{ method: 'initialize', params: { protocolVersion, capabilities: {}, clientInfo } }`.
+`capabilities` is deliberately synthesized empty (no `roots`) so upstream's
+`initializeServer()` never attempts `server.listRoots()` — which would try
+to send a request over a transport that doesn't exist — on a session with
+no transport; `clientInfo.cwd` then falls back to `process.cwd()` via
+upstream's own `firstRootPath([])`, which only affects where an isolated
+session's default traces directory resolves to. `clientInfo.name` /
+`protocolVersion` mirror the **primary** session's real handshake when
+available (`enhanced/index.js` wraps the primary server's own `initialize`
+handler purely to capture, never alter, those values — the real client's
+handshake is forwarded to upstream completely unchanged) with a
+`(session:<name>)` suffix; a hardcoded fallback identity is used if that
+capture isn't available for some reason. See the module-level comment in
+`enhanced/utils/sessions.js` for the full trace through the SDK internals.
+
+### `browser_session` — session management tool
+
+New tool, registered alongside `file_download`. `action`:
+
+- `"list"` — every session's name, creation time, last-used time, and
+  whether it's the default.
+- `"close"` (requires `name`) — closes one named secondary session. Closing
+  `"default"` is rejected (`isError`, with an explanation) — the default
+  session is the primary MCP connection itself and closing it would break
+  the client's own connection.
+- `"close_all"` — closes every secondary session, leaving the default
+  session untouched.
+
+Closing a session runs, in order (each step best-effort — a failure is
+logged to stderr, never thrown, so it can't block the rest): (1) that
+session's own `browser_close` tool (the real upstream tool name — verified
+via `tools/list`, not assumed from the legacy fork, which used
+`browser_run_code`/`ref`-era naming since superseded — see the table near
+the top of this doc) through its own `tools/call` handler; (2)
+`server.close()` on the session's MCP `Server` object; (3) `context.close()`
+then `browser.close()` directly on the `playwright-core` objects this
+router launched itself. The session is removed from the router's map only
+after all of these have been attempted, so a subsequent use of the same
+name always gets a genuinely fresh browser, not a stale reference.
+
+#### Session teardown actually frees the browser process (not just bookkeeping)
+
+This was **not** true in an earlier version of this feature, and was only
+caught by empirically counting OS processes (`pgrep`), not by reading code:
+upstream's own `createConnection()` (`playwright-core/lib/coreBundle.js`)
+constructs its `BrowserBackend` with no `disposeCallback` — that's the one
+thing that would actually call `browser.close()`, and it's only ever
+supplied by upstream's own CLI/daemon entry points, not by the public
+`createConnection()` this layer wraps. So steps (1) and (2) above dispose
+open tabs and release the MCP `Server` object, but **do not** close the
+underlying browser process — it would otherwise keep running, orphaned,
+until the *entire* `enhanced/cli.js` process exits (at which point
+playwright-core's own process-level exit-handler safety net finally reaps
+it). For a long-lived server juggling many named sessions over time, that
+would mean every `close`/`close_all`/idle-cleanup silently leaked a browser
+process.
+
+Because secondary sessions launch their own browser+context (see
+"Semantics" above), this router holds direct references to them and closes
+them directly in step (3) — which is what actually frees the process, and
+does so immediately, not just at server shutdown. Verified with a `pgrep`
+process-count check before/after `close_all` (both manually during
+development and as an automated best-effort assertion in
+`enhanced/tests/sessions.test.mjs`, skipped gracefully if `pgrep` isn't
+available in the test environment).
+
+### Idle cleanup
+
+Secondary sessions unused for `PLAYWRIGHT_MCP_SESSION_IDLE_MS` (default 15
+minutes; `0` disables idle cleanup entirely; an invalid/missing value falls
+back to the default rather than silently disabling cleanup) are closed
+automatically by a single `setInterval(...).unref()` sweeper (checked at
+most once a minute, or once per `idleMs` if that's shorter) so it never
+keeps the process alive on its own. The default session is never
+idle-closed. Every automatic closure is logged to stderr.
+
+### Example: instructing an agent to use two sessions
+
+```
+Use session "buyer" for the buyer flow and session "seller" for the seller
+flow — they need independent logins and cookies. Navigate session "buyer"
+to https://example.com/login and log in as buyer@example.com, then
+separately navigate session "seller" to the same URL and log in as
+seller@example.com. When you're done, call browser_session with
+action "close_all" to clean them both up (or just leave them — they'll be
+closed automatically after 15 minutes of idling).
+```
+
+Concretely, that means: `browser_navigate({ url: ..., session: "buyer" })`,
+`browser_click({ target: ..., session: "buyer" })`,
+`browser_navigate({ url: ..., session: "seller" })`, etc. — every browser
+tool call just carries the same `session` string for calls that belong to
+the same logical browser.
+
+### Verification
+
+`enhanced/tests/sessions.test.mjs` (wired into `npm run test:enhanced`
+between the pack and smoke gates) covers: pure-function unit checks
+(`validateSessionName`, `cloneConfigForSecondary`, `resolveIdleMs`); two
+named sessions navigating to different `data:` URLs and ending up with
+distinct current-page URLs; `localStorage` isolation between two named
+sessions *and* the default session at the same real origin (proving
+genuinely separate browser contexts, not just separate tabs); the `session`
+param being combined with an existing enhanced param (`returnSnapshot`) and
+stripped without upstream rejecting the call; invalid/unknown/default-name
+rejection paths; the close → reuse → fresh-session lifecycle; a `pgrep`-based
+check (best-effort, skipped if unavailable) that `close_all` actually
+reduces the number of live browser processes rather than only updating this
+router's own bookkeeping; and a live, short-timeout
+(`PLAYWRIGHT_MCP_SESSION_IDLE_MS`) run of the real idle sweeper actually
+closing an idle session (process included) while leaving the default alone.
+Default-path parity is asserted by `enhanced/tests/smoke.mjs` itself staying
+green **unchanged** — that file was not modified by this feature at all,
+which is the actual parity gate.
 
 ## Config resolution (`enhanced/cli.js` / `enhanced/utils/config.js`)
 

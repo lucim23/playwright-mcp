@@ -19,9 +19,12 @@
 'use strict';
 
 const { createConnection: upstreamCreateConnection } = require('../index.js');
-const { enhancedToolSchemas, mergeToolSchema } = require('./tools/schemas');
+const { enhancedToolSchemas, mergeToolSchema, injectSessionParam } = require('./tools/schemas');
 const { enhanceToolResponse } = require('./tools/enhancer');
 const { fileDownloadToolDefinition, handleFileDownload } = require('./tools/fileDownload');
+const { browserSessionToolDefinition, handleBrowserSession } = require('./tools/browserSession');
+const { extractRequestHandlers, requireHandler } = require('./utils/handlers');
+const { createSessionRouter, validateSessionName, DEFAULT_SESSION_NAME } = require('./utils/sessions');
 
 /**
  * @param {import('../config').Config} [config]
@@ -30,31 +33,48 @@ const { fileDownloadToolDefinition, handleFileDownload } = require('./tools/file
  */
 async function createConnection(config, contextGetter) {
   const server = await upstreamCreateConnection(config, contextGetter);
-  const handlers = server && server._requestHandlers;
+  const handlers = extractRequestHandlers(server, 'primary server');
 
-  if (!handlers || typeof handlers.get !== 'function' || typeof handlers.set !== 'function') {
-    throw new Error(
-      '[playwright-mcp enhanced] FATAL: MCP SDK Server._requestHandlers is missing or is not a Map-like ' +
-      'object. The enhancement layer intercepts tools/list and tools/call by replacing entries in this ' +
-      'private map, and @modelcontextprotocol/sdk (or the upstream createConnection() implementation in ' +
-      'playwright-core/lib/coreBundle.js) has changed shape in a way that breaks this. Refusing to start ' +
-      'in a silently-degraded state — the enhancement layer would otherwise appear to work while none of ' +
-      'its tool parameters, snapshot shaping, or file_download tool actually take effect. Update ' +
-      'enhanced/index.js for the new Server internals before using this layer.'
+  const originalListHandler = requireHandler(handlers, 'tools/list', 'primary server');
+  const originalCallHandler = requireHandler(handlers, 'tools/call', 'primary server');
+
+  // Capture the real client's initialize handshake (protocolVersion +
+  // clientInfo) so named secondary sessions -- which never receive a real
+  // `initialize` request over any transport, since they're never
+  // `.connect()`-ed to one -- can synthesize a plausible one of their own.
+  // See enhanced/utils/sessions.js's module doc comment for the full
+  // rationale and why this is necessary at all. Purely a capture: the
+  // primary's own handshake is forwarded to the original handler completely
+  // unchanged, so this has zero effect on the primary/default session's
+  // behavior.
+  const capturedPrimaryInit = { protocolVersion: undefined, clientInfo: undefined };
+  const originalInitializeHandler = handlers.get('initialize');
+  if (typeof originalInitializeHandler === 'function') {
+    handlers.set('initialize', async (request, extra) => {
+      const params = request && request.params;
+      if (params) {
+        capturedPrimaryInit.protocolVersion = params.protocolVersion;
+        capturedPrimaryInit.clientInfo = params.clientInfo;
+      }
+      return originalInitializeHandler(request, extra);
+    });
+  } else {
+    process.stderr.write(
+      '[playwright-mcp enhanced] WARNING: primary server did not register an "initialize" request handler; ' +
+      'named secondary sessions will use a hardcoded fallback clientInfo instead of mirroring the real ' +
+      'client\'s. This only affects cosmetic identity information upstream\'s backend factory receives, not ' +
+      'correctness of the primary/default session.\n'
     );
   }
 
-  const originalListHandler = handlers.get('tools/list');
-  const originalCallHandler = handlers.get('tools/call');
-
-  if (typeof originalListHandler !== 'function' || typeof originalCallHandler !== 'function') {
-    throw new Error(
-      '[playwright-mcp enhanced] FATAL: upstream createConnection() did not register tools/list and/or ' +
-      'tools/call request handlers on the Server it returned (found: ' +
-      `tools/list=${typeof originalListHandler}, tools/call=${typeof originalCallHandler}). ` +
-      'Refusing to start in a silently-degraded state.'
-    );
-  }
+  const sessionRouter = createSessionRouter({
+    primaryServer: server,
+    primaryListHandler: originalListHandler,
+    primaryCallHandler: originalCallHandler,
+    baseConfig: config,
+    upstreamCreateConnection,
+    getCapturedPrimaryInit: () => capturedPrimaryInit,
+  });
 
   handlers.set('tools/list', async (request, extra) => {
     const result = await originalListHandler(request, extra);
@@ -70,19 +90,61 @@ async function createConnection(config, contextGetter) {
           tool = rest;
         }
         const enhancement = tool && enhancedToolSchemas[tool.name];
-        return enhancement ? mergeToolSchema(tool, enhancement) : tool;
+        const merged = enhancement ? mergeToolSchema(tool, enhancement) : tool;
+        // Every tool upstream lists here is a browser tool that goes
+        // through a session's own tools/call handler, so all of them get
+        // the `session` param (issue #13 / TK-6). file_download and
+        // browser_session are appended below, after this map, so they're
+        // never seen by injectSessionParam here.
+        return injectSessionParam(merged);
       });
       result.tools.push(fileDownloadToolDefinition);
+      result.tools.push(browserSessionToolDefinition);
     }
     return result;
   });
 
   handlers.set('tools/call', async (request, extra) => {
     const toolName = request.params && request.params.name;
-    const toolArgs = (request.params && request.params.arguments) || {};
+    const rawArgs = (request.params && request.params.arguments) || {};
 
     if (toolName === 'file_download')
-      return handleFileDownload(toolArgs, config);
+      return handleFileDownload(rawArgs, config);
+
+    if (toolName === 'browser_session')
+      return handleBrowserSession(rawArgs, sessionRouter);
+
+    // `session` routing (issue #13 / TK-6): resolve which session's own
+    // tools/call handler this call goes through, and strip the `session`
+    // key out of the forwarded arguments -- upstream's Zod validation would
+    // likely just ignore an unknown extra property today, but that's an
+    // accident of upstream's current schema strictness, not a contract this
+    // layer should lean on.
+    const hadSessionKey = Object.prototype.hasOwnProperty.call(rawArgs, 'session');
+    let toolArgs = rawArgs;
+    let sessionName = DEFAULT_SESSION_NAME;
+    if (hadSessionKey) {
+      const { session, ...rest } = rawArgs;
+      toolArgs = rest;
+      const validation = validateSessionName(session);
+      if (!validation.ok) {
+        return {
+          content: [{ type: 'text', text: `### Error\nInvalid "session" parameter: ${validation.reason}` }],
+          isError: true,
+        };
+      }
+      sessionName = session;
+    }
+
+    let sessionEntry;
+    try {
+      sessionEntry = await sessionRouter.getOrCreateSession(sessionName);
+    } catch (e) {
+      return {
+        content: [{ type: 'text', text: `### Error\nFailed to create session "${sessionName}": ${(e && e.message) || e}` }],
+        isError: true,
+      };
+    }
 
     // Argument injection: default browser_take_screenshot to jpeg (smaller
     // than upstream's own png default) unless the caller specified a type
@@ -94,15 +156,22 @@ async function createConnection(config, contextGetter) {
     // quality/size knob to inject beyond `type` (no `quality`/`jpegQuality`
     // property in its schema) — see tools/schemas.js and ENHANCEMENTS.md
     // for what that means we dropped.
+    //
+    // effectiveRequest is only rebuilt from `request` when something
+    // actually needs to change (a `session` key was stripped, and/or the
+    // screenshot default applies) so the default-session, no-enhanced-args
+    // path stays byte-for-byte identical to before this feature existed.
     let effectiveRequest = request;
+    if (hadSessionKey)
+      effectiveRequest = { ...request, params: { ...request.params, arguments: toolArgs } };
     if (toolName === 'browser_take_screenshot' && toolArgs.type === undefined && !toolArgs.filename) {
       effectiveRequest = {
-        ...request,
-        params: { ...request.params, arguments: { ...toolArgs, type: 'jpeg' } },
+        ...effectiveRequest,
+        params: { ...effectiveRequest.params, arguments: { ...toolArgs, type: 'jpeg' } },
       };
     }
 
-    const result = await originalCallHandler(effectiveRequest, extra);
+    const result = await sessionEntry.callHandler(effectiveRequest, extra);
 
     if (toolName && enhancedToolSchemas[toolName])
       return enhanceToolResponse(result, { toolName, params: toolArgs, config: config || {} });
@@ -118,4 +187,6 @@ module.exports = {
   enhancedToolSchemas,
   fileDownloadToolDefinition,
   handleFileDownload,
+  browserSessionToolDefinition,
+  handleBrowserSession,
 };

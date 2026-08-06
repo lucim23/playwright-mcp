@@ -28,7 +28,7 @@
     "docker-rm": "docker rm playwright-mcp-dev",
     "docker-run": "docker run -it -p 8080:8080 --name playwright-mcp-dev playwright-mcp-dev:latest",
     "roll": "node roll.js",
-    "test:enhanced": "node enhanced/tests/pack.test.mjs && node enhanced/tests/fileDownload.test.mjs && node enhanced/tests/smoke.mjs"
+    "test:enhanced": "node enhanced/tests/pack.test.mjs && node enhanced/tests/fileDownload.test.mjs && node enhanced/tests/sessions.test.mjs && node enhanced/tests/smoke.mjs"
   },
   "exports": {
     "./package.json": "./package.json",
