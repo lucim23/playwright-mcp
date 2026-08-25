@@ -324,6 +324,45 @@ Default-path parity is asserted by `enhanced/tests/smoke.mjs` itself staying
 green **unchanged** — that file was not modified by this feature at all,
 which is the actual parity gate.
 
+## Surviving `browser_close` on a long-lived connection (issue [#15](../../issues/15))
+
+Upstream's `browser_close` marks its response `isClose`, which disposes the
+whole backend: `Context.dispose()` clears the tabs **and removes the
+browser-context `"page"` event listener**, while the memoized
+`_browserContextPromise` survives. Upstream assumes the client disconnects
+right after — but a long-lived stdio client (Claude Code keeps one server
+across tasks) calls again: `ensureTab()` gets the stale context promise,
+`newPage()` succeeds with nobody listening, `_currentTab` stays `undefined`,
+and *every* subsequent call fails instantly with
+`TypeError: Cannot read properties of undefined (reading 'waitForInitialized')`
+until the server process dies.
+
+This layer recovers in the session router (`enhanced/utils/sessions.js`),
+without touching any upstream file:
+
+- After a successful `browser_close` through a session's handler,
+  `noteBrowserClosed(name)` runs. The **default** session is marked
+  `needsRebuild` and lazily gets a fresh upstream connection (same
+  config/`contextGetter`, synthesized initialize — the secondary-session
+  handshake machinery reused) swapped into its router entry on next use;
+  lazy on purpose, since most clients close at the end of a task and never
+  call again. A **named** session goes through the router's own full
+  teardown (which also closes the browser/context the router launched —
+  upstream's close never reaches them, so this fixes a browser-process leak
+  for direct `browser_close` calls on named sessions too) and is recreated
+  transparently on next use.
+- Belt-and-braces: any tool result carrying the exact wedge signature
+  triggers `recoverSession(name)` plus a single transparent retry of the
+  same request (safe — the wedge throws in `ensureTab()`, before any tool
+  action runs). This heals servers wedged through untracked dispose paths,
+  including processes started before this fix existed.
+
+`enhanced/tests/closeReuse.test.mjs` pins it end-to-end over real stdio:
+navigate → close → navigate must succeed, twice, on the default session and
+on a named session, with the default session unaffected by a named
+session's close/rebuild churn. Pre-fix that test fails with the exact
+`waitForInitialized` TypeError.
+
 ## Config resolution (`enhanced/cli.js` / `enhanced/utils/config.js`)
 
 `enhanced/cli.js` is a thin stdio-only CLI. It does not reimplement
@@ -385,6 +424,7 @@ or switch to a `package.json` `"files"` allow-list.
 npm run test:enhanced
 # or individually:
 node enhanced/tests/fileDownload.test.mjs   # unit-level file_download hardening (local HTTP/raw-socket server only)
+node enhanced/tests/closeReuse.test.mjs     # end-to-end: browser_close → reuse survives (issue #15)
 node enhanced/tests/smoke.mjs               # end-to-end: real subprocess, real stdio MCP client
 python3 enhanced/tests/test-mcp-client.py   # same idea, raw JSON-RPC over stdio, stdlib only (no `mcp` pip package needed)
 ```

@@ -314,6 +314,9 @@ async function synthesizeInitialize(handlers, sessionName, capturedPrimaryInit) 
  * @param {Record<string, any> | undefined} opts.baseConfig the config the primary server was created with
  * @param {(config: any, contextGetter?: any) => Promise<any>} opts.upstreamCreateConnection
  * @param {() => { protocolVersion?: string, clientInfo?: { name?: string, version?: string } }} opts.getCapturedPrimaryInit
+ * @param {(() => Promise<any>) | undefined} [opts.primaryContextGetter] the contextGetter the primary
+ *   server was created with (if any), so a default-session rebuild (issue #15) recreates the
+ *   upstream connection with the exact same embedding hook
  * @param {NodeJS.ProcessEnv} [opts.env]
  */
 function createSessionRouter(opts) {
@@ -324,6 +327,7 @@ function createSessionRouter(opts) {
     baseConfig,
     upstreamCreateConnection,
     getCapturedPrimaryInit,
+    primaryContextGetter,
     env = process.env,
   } = opts;
 
@@ -340,6 +344,15 @@ function createSessionRouter(opts) {
     isDefault: true,
     createdAt: now(),
     lastUsedAt: now(),
+    // Issue #15: set after a `browser_close` went through this session's
+    // handler. Upstream's close path disposes the whole backend (tabs +
+    // the context's "page" listener) but keeps serving later calls on the
+    // same long-lived connection, and its memoized `_browserContextPromise`
+    // survives dispose — so every later call dies with
+    // `TypeError: ... (reading 'waitForInitialized')`. The next
+    // getOrCreateSession() for this entry swaps in a fresh upstream
+    // connection instead of forwarding to the disposed one.
+    needsRebuild: false,
   });
 
   /** @type {Map<string, Promise<any>>} in-flight creations, keyed by name, to avoid double-launch races */
@@ -379,10 +392,42 @@ function createSessionRouter(opts) {
     return entry;
   }
 
+  /**
+   * Issue #15: lazily replace the default session's disposed upstream
+   * connection with a fresh one, keeping the transport-attached primary
+   * `Server` (whose wrapped tools/call handler routes through this entry)
+   * untouched. The replacement connection is transport-less, so it gets the
+   * same synthesized initialize handshake secondary sessions do. Memoized
+   * in-flight so concurrent calls rebuild once. Lazy on purpose: most
+   * clients `browser_close` at the end of a task and never call again — an
+   * eager rebuild would launch a browser nobody uses.
+   */
+  let rebuildingDefault = null;
+  function rebuildDefaultSession() {
+    if (rebuildingDefault)
+      return rebuildingDefault;
+    rebuildingDefault = (async () => {
+      const entry = sessions.get(DEFAULT_SESSION_NAME);
+      const server = await upstreamCreateConnection(baseConfig, primaryContextGetter);
+      const handlers = extractRequestHandlers(server, 'rebuilt default session');
+      await synthesizeInitialize(handlers, DEFAULT_SESSION_NAME, getCapturedPrimaryInit ? getCapturedPrimaryInit() : undefined);
+      entry.listHandler = requireHandler(handlers, 'tools/list', 'rebuilt default session');
+      entry.callHandler = requireHandler(handlers, 'tools/call', 'rebuilt default session');
+      // Keep entry.server as the transport-attached primary Server; the
+      // replacement upstream Server only matters through its handlers, but
+      // hold it so the previous (disposed) one can be GC'd deliberately.
+      entry.rebuiltServer = server;
+      entry.needsRebuild = false;
+    })().finally(() => { rebuildingDefault = null; });
+    return rebuildingDefault;
+  }
+
   /** @param {string} name */
   async function getOrCreateSession(name) {
     const existing = sessions.get(name);
     if (existing) {
+      if (existing.isDefault && existing.needsRebuild)
+        await rebuildDefaultSession();
       existing.lastUsedAt = now();
       return existing;
     }
@@ -392,6 +437,45 @@ function createSessionRouter(opts) {
     const promise = createSecondarySession(name).finally(() => creating.delete(name));
     creating.set(name, promise);
     return promise;
+  }
+
+  /**
+   * Issue #15: called by the tools/call wrapper right after a successful
+   * `browser_close` went through session `name`'s handler — upstream has
+   * just disposed that connection's backend, so make the next use of the
+   * name get a working one. Default session: mark for the lazy rebuild
+   * above. Named session: full teardown now (which also closes the
+   * browser/context this router launched — upstream's own close never
+   * reaches them) and let the next call recreate it fresh.
+   * @param {string} name
+   */
+  async function noteBrowserClosed(name) {
+    const entry = sessions.get(name);
+    if (!entry)
+      return;
+    if (entry.isDefault) {
+      entry.needsRebuild = true;
+      return;
+    }
+    await closeSession(name);
+  }
+
+  /**
+   * Issue #15 belt-and-braces: force-recover a session whose backend turned
+   * out to be disposed anyway (the wedge signature surfaced on a call that
+   * was not preceded by a tracked `browser_close` — e.g. a server wedged
+   * before this fix shipped, or upstream's `_disconnected` dispose path).
+   * @param {string} name
+   */
+  async function recoverSession(name) {
+    const entry = sessions.get(name);
+    if (entry && entry.isDefault) {
+      entry.needsRebuild = true;
+      await rebuildDefaultSession();
+      return;
+    }
+    if (entry)
+      await closeSession(name);
   }
 
   function listSessions() {
@@ -499,6 +583,8 @@ function createSessionRouter(opts) {
     listSessions,
     closeSession,
     closeAllSecondary,
+    noteBrowserClosed,
+    recoverSession,
     /** Test-only: stop the idle sweeper so it doesn't keep a process alive/interfere with test timing. */
     _stopIdleSweep() {
       if (sweepTimer)

@@ -27,6 +27,25 @@ const { extractRequestHandlers, requireHandler } = require('./utils/handlers');
 const { createSessionRouter, validateSessionName, DEFAULT_SESSION_NAME } = require('./utils/sessions');
 
 /**
+ * Issue #15: the one error signature a disposed upstream backend produces on
+ * every subsequent call (`ensureTab()` → `this._currentTab` is undefined
+ * because `Context.dispose()` removed the browser-context "page" listener
+ * while the memoized `_browserContextPromise` survived). Matched exactly —
+ * a page-side TypeError from user code in browser_evaluate/run_code is
+ * reported with a different, in-page stack shape, but keep the match string
+ * this specific so a coincidental page error can at worst trigger one
+ * harmless session rebuild + retry.
+ * @param {any} result a tools/call result object
+ */
+function isDisposedBackendResult(result) {
+  if (!result || !result.isError || !Array.isArray(result.content))
+    return false;
+  return result.content.some(c =>
+    c && c.type === 'text' && typeof c.text === 'string' &&
+    c.text.includes("Cannot read properties of undefined (reading 'waitForInitialized')"));
+}
+
+/**
  * @param {import('../config').Config} [config]
  * @param {() => Promise<import('playwright').BrowserContext>} [contextGetter]
  * @returns {Promise<import('@modelcontextprotocol/sdk/server/index.js').Server>}
@@ -74,6 +93,9 @@ async function createConnection(config, contextGetter) {
     baseConfig: config,
     upstreamCreateConnection,
     getCapturedPrimaryInit: () => capturedPrimaryInit,
+    // Issue #15: a default-session rebuild after browser_close recreates the
+    // upstream connection with the exact same embedding hook it started with.
+    primaryContextGetter: contextGetter,
   });
 
   handlers.set('tools/list', async (request, extra) => {
@@ -171,7 +193,31 @@ async function createConnection(config, contextGetter) {
       };
     }
 
-    const result = await sessionEntry.callHandler(effectiveRequest, extra);
+    let result = await sessionEntry.callHandler(effectiveRequest, extra);
+
+    // Issue #15: a call that hit a DISPOSED upstream backend (browser_close
+    // on a long-lived connection disposes the backend but leaves its
+    // memoized `_browserContextPromise` behind — every later call then dies
+    // with this exact TypeError, forever). The failed call did nothing (the
+    // throw happens in `ensureTab()`, before any tool action runs), so
+    // recover the session once and retry the same request transparently.
+    if (isDisposedBackendResult(result)) {
+      process.stderr.write(
+        `[playwright-mcp enhanced] session "${sessionName}": upstream backend was disposed ` +
+        `(stale after browser_close); recreating the session and retrying "${toolName}".\n`
+      );
+      await sessionRouter.recoverSession(sessionName);
+      const freshEntry = await sessionRouter.getOrCreateSession(sessionName);
+      result = await freshEntry.callHandler(effectiveRequest, extra);
+    }
+
+    // Issue #15: upstream just disposed this session's backend as part of
+    // handling browser_close — make sure the NEXT call on this session gets
+    // a working one instead of the permanent waitForInitialized wedge (for
+    // named sessions this also actually closes the browser process the
+    // router launched, which upstream's own close never reaches).
+    if (toolName === 'browser_close' && !(result && result.isError))
+      await sessionRouter.noteBrowserClosed(sessionName);
 
     if (toolName && enhancedToolSchemas[toolName])
       return enhanceToolResponse(result, { toolName, params: toolArgs, config: config || {} });
